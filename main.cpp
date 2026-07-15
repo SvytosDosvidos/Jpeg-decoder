@@ -14,6 +14,7 @@ class Section {
 public:
     Section(int marker, int get_cnt_byte_4_length) : marker_(marker),
     get_cnt_byte_4_length_(get_cnt_byte_4_length), length_(0), buffer_({}) {}
+
     void add_buffer(int num) {
         if (buffer_.capacity() != length_) {
             buffer_.reserve(length_);
@@ -21,9 +22,18 @@ public:
         buffer_.push_back(num);
     }
 
-    int get_marker() const { return marker_; }
-    int get_length() const { return length_; }
-    int get_cnt_byte_4_length() const { return get_cnt_byte_4_length_; }
+    int get_marker() const {
+         return marker_;
+    }
+
+    int get_length() const {
+        return length_;
+    }
+
+    int get_cnt_byte_4_length() const {
+        return get_cnt_byte_4_length_;
+    }
+
     int get_buffer_el(int l, int r) {
         long long el = 0;
         for (int ind = l; ind <= r; ind++) {
@@ -31,10 +41,14 @@ public:
         }
         return el;
     }
+
     int get_buffer_el(int ind) {
         return buffer_[ind];
     }
-    void add_length(int length) { length_ = 16 * length_ + length; }
+
+    void add_length(int length) {
+         length_ = 16 * length_ + length;
+    }
 private:
     int marker_;
     int length_;
@@ -44,6 +58,21 @@ private:
 };
 
 const int MARKER = 0xff;
+
+class table_quant {
+public:
+    table_quant(int length, int size_byte, int ind_table) : length_(length),
+    size_byte_(size_byte), ind_table_(ind_table) {}
+
+    int get_ind_table() const {
+        return ind_table_;
+    }
+
+private:
+    int length_;
+    int size_byte_;
+    int ind_table_;
+};
 
 void print_sof0_section(Section section) {
     cout << "length = " << section.get_length() << "\n";
@@ -84,43 +113,60 @@ void Decode(string path) {
             cout << "\n";
         }
     }
+    cout << "\n";
 
     std::vector<Section> sections;
+    map<int, int> mapf;
+    mapf[0xD8] = 0;
+    mapf[0xE0] = 2;
+    mapf[0xDB] = 2;
+    mapf[0xC0] = 2;
+    mapf[0xC4] = 2;
+    mapf[0xDA] = 2;
+    mapf[0xD9] = 0;
 
-    Section start_section(0xD8, 0);
-    Section comment_section(0xFE, 2);
-    Section sof0_section(0xC0, 0);
-
-    sections.push_back(start_section);
-    sections.push_back(comment_section);
-    sections.push_back(sof0_section);
+    map<int, table_quant> table_quants;
 
     int i = 0;
-    int ind_sector = 0;
-    while (i + 1 < size && ind_sector < sections.size()) {
-        Section this_section = sections[ind_sector];
-        cout << "\n\n";
-        cout << buffer[i] << " " << buffer[i + 1] << "\n";
-        cout << MARKER << " " << this_section.get_marker() << "\n";
-        cout << "\n";
-        if (buffer[i] == MARKER && buffer[i + 1] == this_section.get_marker()) {
+    vector<int> nums;
+    bool findDA = false;
+    while (i + 1 < size) {
+        if (buffer[i] == MARKER && mapf.find(buffer[i + 1]) != mapf.end()) {
+            cout << "find\n";
+            cout << std::hex << buffer[i] << " " << buffer[i + 1] << "\n";
             int indStart = i + 2;
+            Section this_section(buffer[i + 1], mapf[buffer[i + 1]]);
             for (int j = indStart; j < indStart + this_section.get_cnt_byte_4_length(); j++) {
                 this_section.add_length(static_cast<int>(buffer[j]));
             }
             for (int j = indStart; j < indStart + this_section.get_length(); j++) {
                 this_section.add_buffer(buffer[j]);
             }
-            i = indStart + this_section.get_cnt_byte_4_length();
-            ind_sector++;
+            i = indStart + this_section.get_length();
+            sections.push_back(this_section);
+
+            if(this_section.get_marker() == 0xDA) {
+                findDA = true;
+            } else if(this_section.get_marker() == 0xDB) {
+                table_quant new_table_quant(this_section.get_length(), this_section.get_buffer_el(2)/16, this_section.get_buffer_el(2)%16);
+                table_quants[new_table_quant.get_ind_table()] = new_table_quant;
+            }
+            //cout << indStart << " " << this_section.get_length() << " " << buffer.size() << "\n";
+            //cout << '\n';
+            //int a;
+            //cin >> a;
+        } else if(findDA) {
+            nums.push_back(buffer[i]);
+            i++;
         } else {
-            //cout << "hui\n";
+            //throw
         }
-        int a;
-        cin >> a;
     }
+
+    cout << "end.\n";
 }
 
 int main() {
+    //Decode("progressive.jpg");
     Decode("tiny.jpg");
 }
