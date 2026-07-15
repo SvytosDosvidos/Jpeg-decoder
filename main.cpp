@@ -132,6 +132,14 @@ private:
 };
 
 class dht {
+private:
+    struct tree {
+        int num;
+
+        tree* l;
+        tree* r;
+    };
+
 public:
     dht(Section &section) {
         length_ = section.get_length();
@@ -168,11 +176,52 @@ public:
         }
     }
 
+    void dfs(tree *v, int num, int this_d, int d) {
+        if(!v->l || (v->l && v->l->num == -1)) {
+            if(!v->l) {
+                *v->l = {-1, nullptr, nullptr};
+                if(this_d == d) {
+                    v->l->num = num;
+                    return;
+                } else {
+                    dfs(v->l, num, this_d + 1, d);
+                }
+            } else {
+                dfs(v->l, num, this_d + 1, d);
+            }
+        }
+
+        if(!v->l || (v->l && v->l->num == -1)) {
+            if(!v->l) {
+                *v->l = {-1, nullptr, nullptr};
+                if(this_d == d) {
+                    v->l->num = num;
+                    return;
+                } else {
+                    dfs(v->l, num, this_d + 1, d);
+                }
+            } else {
+                dfs(v->l, num, this_d + 1, d);
+            }
+        }
+    }
+
+    void create_tree() {
+        *start = {-1, nullptr, nullptr};
+        for(int i = 0; i < codes_.size(); i++) {
+            int cnt = codes_[i].size();
+            while(cnt--) {
+
+            }
+        }
+    }
+
 private:
     int length_;
     int class_;
     int id_;
     vector<vector<int>> codes_;
+    tree* start;
 };
 
 void Decode(string path) {
