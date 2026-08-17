@@ -9,6 +9,8 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    Decode(argv[1]);
+    cout << "this_open\n";
+    decoder decoder;
+    decoder.decode(argv[1]);
     return 0;
 }

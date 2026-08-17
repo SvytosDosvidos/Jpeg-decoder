@@ -8,6 +8,8 @@
 #include<fstream>
 #include<unordered_map>
 
+#include "../cmake-build-debug/_deps/catch2-src/src/catch2/generators/catch_generators.hpp"
+
 using namespace std;
 
 class Section {
@@ -68,14 +70,57 @@ public:
 
     table_quant(table_quant &&) = default;
 
+    bool operator==(const table_quant& other) const {
+        return length_ == other.length_
+        && size_byte_ == other.size_byte_
+        && ind_table_ == other.ind_table_
+        && matrix_ == other.matrix_;
+    }
+
     table_quant &operator=(const table_quant &) = default;
 
     table_quant &operator=(table_quant &&) = default;
 
     table_quant(Section &section) {
         length_ = section.get_length();
-        size_byte_ = section.get_buffer_el(2) / 16;
+        size_byte_ = 1 + section.get_buffer_el(2) / 16;
         ind_table_ = section.get_buffer_el(2) % 16;
+
+        create_matrix(section);
+    }
+
+    table_quant(int length, int size_byte, int ind_table, vector<vector<int>> &matrix) :
+        length_(length), size_byte_(size_byte), ind_table_(ind_table_), matrix_(matrix) {};
+
+    void create_matrix(Section &section) {
+        int ind_i = 0, ind_j = 0;
+        vector<pair<int, int>> directions = {{-1,1}, {1, -1}};
+        int type = 0;
+        int ind = 0;
+        matrix_.resize(8);
+        for (int i = 0; i < 8; i++) {
+            matrix_[i].resize(8);
+        }
+
+        int flag = 0;
+        while (ind < 64) {
+            cout << ind_i << " " << ind_j << " " << 1 + ind << "\n";
+            //matrix_[ind_i][ind_j] = section.get_buffer_el(3 + ind);
+            if (ind == 35) {
+                flag = 7;
+            }
+            if (type == 1 && ind_i == flag) {
+                ind_j++;
+                type = 1 - flag/7;
+            } else if (type == 0 && ind_j == flag) {
+                ind_i++;
+                type = 0 + flag/7;
+            } else {
+                ind_i += directions[type].first;
+                ind_j += directions[type].second;
+            }
+            ind++;
+        }
     }
 
     int get_length() const {
@@ -90,12 +135,16 @@ public:
         return ind_table_;
     }
 
+    int get_el_matrix(int i, int j) const {
+        return matrix_[i][j];
+    }
+
 private:
     int length_;
     int size_byte_;
     int ind_table_;
 
-    vector<vector<int> > matrix;
+    vector<vector<int>> matrix_;
 };
 
 class sof0 {
@@ -113,23 +162,6 @@ public:
                 section.get_buffer_el(i), section.get_buffer_el(i + 1) / 16,
                 section.get_buffer_el(i + 1) % 16, section.get_buffer_el(i + 2)
             };
-        }
-    }
-
-    void print_sof0_section() const {
-        cout << std::dec << "length = " << length_ << "\n";
-        cout << std::dec << "precision = " << precision_ << "\n";
-        cout << std::dec << "height = " << heigth_ << "\n";
-        cout << std::dec << "width = " << width_ << "\n";
-        cout << std::dec << "cnt channels = " << cnt_channels_ << "\n";
-
-        cout << "\n";
-        for (int i = 0; i < cnt_channels_; i++) {
-            cout << std::dec << "ind = " << channels_[i].id << "\n";
-            cout << std::dec << "H[" << channels_[i].id << "]:" << " " << channels_[i].h << "\n";
-            cout << std::dec << "V[" << channels_[i].id << "]:" << " " << channels_[i].w << "\n";
-            cout << std::dec << "ind table quant" << " " << channels_[i].id_quant << "\n";
-            cout << "\n";
         }
     }
 
@@ -168,29 +200,11 @@ public:
 
         int ind = 19;
         for (int i = 0; i < 16; i++) {
-            //cout << "\nsz = " << std::dec << section.get_buffer_el(i + 3) << "\n";
             codes_[i].resize(section.get_buffer_el(i + 3));
             for (int j = 0; j < codes_[i].size(); j++) {
-                //cout << "pair = " << j + ind << " " << section.get_length() << "\n";
                 codes_[i][j] = section.get_buffer_el(j + ind);
             }
             ind += codes_[i].size();
-        }
-    }
-
-    void print_dht() const {
-        cout << std::dec << "length = " << length_ << "\n";
-        cout << std::dec << "class = " << class_ << "\n";
-        cout << std::dec << "id = " << id_ << "\n";
-        cout << "\n";
-
-        for (int i = 0; i < 16; i++) {
-            cout << std::dec << "id_block = " << i + 1 << "\n";
-            cout << std::dec << "size_block = " << codes_[i].size() << "\n";
-            for (auto &it: codes_[i]) {
-                cout << it << " ";
-            }
-            cout << "\n\n";
         }
     }
 
@@ -241,104 +255,111 @@ private:
     tree *start;
 };
 
-void Decode(string path) {
-    std::ifstream file(path, std::ios::binary);
+class decoder {
+public:
+    void decode(string path) {
+        std::ifstream file(path, std::ios::binary);
 
-    file.seekg(0, std::ios::end);
-    std::streamsize size = file.tellg();
-    file.seekg(0, std::ios::beg);
-
-    if (size == 0) {
-        throw std::runtime_error("file is empty");
-    }
-
-    std::vector<int> buffer(size);
-    char byte;
-    int ind = 0;
-    while (file.get(byte)) {
-        buffer[ind] = static_cast<int>(static_cast<unsigned char>(byte));
-        cout << std::hex << buffer[ind] << " , " << std::dec << buffer[ind] << " | ";
-        //cout << buffer[ind] << " | ";
-        ind++;
-        if (ind % 8 == 0) {
-            cout << "\n";
+        if (!file.is_open()) {
+            _is_open = false;
+            return;
         }
-    }
-    cout << "\n";
 
-    std::vector<Section> sections;
-    map<int, int> mapf;
-    mapf[0xD8] = 0;
-    mapf[0xFE] = 2; //0xFE, 0xE0 - in local test
-    mapf[0xDB] = 2;
-    mapf[0xC0] = 2;
-    mapf[0xC4] = 2;
-    mapf[0xDA] = 2;
-    mapf[0xD9] = 0;
+        file.seekg(0, std::ios::end);
+        std::streamsize size = file.tellg();
+        file.seekg(0, std::ios::beg);
 
-    vector<table_quant> table_quants;
-    vector<sof0> sof0s;
-    vector<dht> dhts;
+        _is_open = true;
 
-    int i = 0;
-    vector<int> nums;
-    bool findDA = false;
-    while (i + 1 < size) {
-        if (buffer[i] == MARKER && mapf.find(buffer[i + 1]) != mapf.end()) {
-            cout << "find\n";
-            cout << std::hex << buffer[i] << " " << buffer[i + 1] << "\n";
-            int indStart = i + 2;
-            Section this_section(buffer[i + 1], mapf[buffer[i + 1]]);
-            for (int j = indStart; j < indStart + this_section.get_cnt_byte_4_length(); j++) {
-                this_section.add_length(buffer[j]);
+        std::vector<int> buffer(size);
+        char byte;
+        int ind = 0;
+        while (file.get(byte)) {
+            buffer[ind] = static_cast<int>(static_cast<unsigned char>(byte));
+            ind++;
+        }
+
+        std::vector<Section> sections;
+        map<int, int> mapf;
+        mapf[0xD8] = 0;
+        mapf[0xFE] = 2; //0xFE, 0xE0 - in local test
+        mapf[0xDB] = 2;
+        mapf[0xC0] = 2;
+        mapf[0xC4] = 2;
+        mapf[0xDA] = 2;
+        mapf[0xD9] = 0;
+
+        int i = 0;
+        vector<int> nums;
+        bool findDA = false;
+        while (i + 1 < size) {
+            if (buffer[i] == MARKER && mapf.find(buffer[i + 1]) != mapf.end()) {
+
+                int indStart = i + 2;
+                Section this_section(buffer[i + 1], mapf[buffer[i + 1]]);
+                for (int j = indStart; j < indStart + this_section.get_cnt_byte_4_length(); j++) {
+                    this_section.add_length(buffer[j]);
+                }
+
+                for (int j = indStart; j < indStart + this_section.get_length(); j++) {
+                    this_section.add_buffer(buffer[j]);
+                }
+
+                i = indStart + this_section.get_length();
+                sections.push_back(this_section);
+
+                if (this_section.get_marker() == 0xDA) {
+                    findDA = true;
+                } else if (this_section.get_marker() == 0xDB) {
+                    table_quant new_table_quant(this_section);
+                    _table_quants.push_back(new_table_quant);
+                } else if (this_section.get_marker() == 0xC0) {
+                    sof0 new_sof0(this_section);
+                    _sof0s.push_back(new_sof0);
+                } else if (this_section.get_marker() == 0xC4) {
+                    dht new_dht(this_section);
+                    _dhts.push_back(new_dht);
+                }
+            } else if (findDA) {
+                nums.push_back(buffer[i]);
+                i++;
+            } else {
+                //throw
             }
-            cout << "add\n";
-            for (int j = indStart; j < indStart + this_section.get_length(); j++) {
-                this_section.add_buffer(buffer[j]);
-                cout << std::dec << buffer[j] << " ";
-            }
-            cout << "\n\n";
-            i = indStart + this_section.get_length();
-            sections.push_back(this_section);
-
-            if (this_section.get_marker() == 0xDA) {
-                findDA = true;
-            } else if (this_section.get_marker() == 0xDB) {
-                table_quant new_table_quant(this_section);
-                table_quants.push_back(new_table_quant);
-            } else if (this_section.get_marker() == 0xC0) {
-                sof0 new_sof0(this_section);
-                sof0s.push_back(new_sof0);
-            } else if (this_section.get_marker() == 0xC4) {
-                dht new_dht(this_section);
-                dhts.push_back(new_dht);
-            }
-        } else if (findDA) {
-            nums.push_back(buffer[i]);
-            i++;
-        } else {
-            //throw
         }
     }
 
-    /*cout << "sof0\n\n";
-    sof0s[0].print_sof0_section();
-    cout << "\n";
-
-    cout << "dht\n";
-    for(auto &this_dht : dhts) {
-        this_dht.print_dht();
-        cout << "\n";
-    }*/
-
-    for (auto &it: table_quants) {
-        cout << std::dec << it.get_length() << " " << it.get_ind_table() << " " << it.get_size_byte() << "\n";
+    int get_size_table_quants() const {
+        return _table_quants.size();
     }
-    cout << "\n";
 
-    cout << "table quant size = " << table_quants.size() << "\n";
-    cout << "sof0 size = " << sof0s.size() << "\n";
-    cout << "dht size = " << dhts.size() << "\n";
+    int get_size_sof0s() const {
+        return _sof0s.size();
+    }
 
-    cout << "end.\n";
-}
+    int get_size_dhts() const {
+        return _dhts.size();
+    }
+
+    bool get_is_open() const {
+        return _is_open;
+    }
+
+    sof0 get_sof0(int ind) const {
+        return _sof0s[ind];
+    }
+
+    dht get_dht(int ind) const {
+        return _dhts[ind];
+    }
+
+    table_quant get_table_quant(int ind) const {
+        return _table_quants[ind];
+    }
+private:
+    vector<table_quant> _table_quants;
+    vector<sof0> _sof0s;
+    vector<dht> _dhts;
+
+    bool _is_open;
+};
