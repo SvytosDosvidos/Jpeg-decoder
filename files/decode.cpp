@@ -90,7 +90,14 @@ public:
     }
 
     table_quant(int length, int size_byte, int ind_table, vector<vector<int>> &matrix) :
-        length_(length), size_byte_(size_byte), ind_table_(ind_table_), matrix_(matrix) {};
+        length_(length), size_byte_(size_byte), ind_table_(ind_table), matrix_(matrix) {};
+
+    bool go2granintsy(int ind_i) {
+        if (ind_i < 0 || ind_i >= 8) {
+            return true;
+        }
+        return false;
+    }
 
     void create_matrix(Section &section) {
         int ind_i = 0, ind_j = 0;
@@ -102,23 +109,28 @@ public:
             matrix_[i].resize(8);
         }
 
-        int flag = 0;
         while (ind < 64) {
-            cout << ind_i << " " << ind_j << " " << 1 + ind << "\n";
-            //matrix_[ind_i][ind_j] = section.get_buffer_el(3 + ind);
-            if (ind == 35) {
-                flag = 7;
+            matrix_[ind_i][ind_j] = section.get_buffer_el(3 + ind);
+            if (go2granintsy(ind_i + directions[type].first) || go2granintsy(ind_j + directions[type].second)) {
+                ind++;
+                if (type == 0) {
+                    if (!go2granintsy(ind_j + 1)) {
+                        ind_j++;
+                    } else {
+                        ind_i++;
+                    }
+                } else {
+                    if (!go2granintsy(ind_i + 1)) {
+                        ind_i++;
+                    } else {
+                        ind_j++;
+                    }
+                }
+                matrix_[ind_i][ind_j] = section.get_buffer_el(3 + ind);
+                type = 1 - type;
             }
-            if (type == 1 && ind_i == flag) {
-                ind_j++;
-                type = 1 - flag/7;
-            } else if (type == 0 && ind_j == flag) {
-                ind_i++;
-                type = 0 + flag/7;
-            } else {
-                ind_i += directions[type].first;
-                ind_j += directions[type].second;
-            }
+            ind_i += directions[type].first;
+            ind_j += directions[type].second;
             ind++;
         }
     }
@@ -139,6 +151,10 @@ public:
         return matrix_[i][j];
     }
 
+    vector<vector<int>> get_matrix() const {
+        return matrix_;
+    }
+
 private:
     int length_;
     int size_byte_;
@@ -147,8 +163,29 @@ private:
     vector<vector<int>> matrix_;
 };
 
+struct channel {
+    int id;
+    int h;
+    int w;
+    int id_quant;
+
+    bool operator==(const channel& other) const {
+        return id == other.id && h == other.h
+        && w == other.w && id_quant == other.id_quant;
+    }
+};
+
 class sof0 {
 public:
+    bool operator==(const sof0& other) const {
+        return length_ == other.length_
+        && precision_ == other.precision_
+        && heigth_ == other.heigth_
+        && width_ == other.width_
+        && cnt_channels_ == other.cnt_channels_
+        && channels_ == other.channels_;
+    }
+
     sof0(Section &section) {
         length_ = section.get_length();
         precision_ = section.get_buffer_el(2);
@@ -165,14 +202,11 @@ public:
         }
     }
 
-private:
-    struct channel {
-        int id;
-        int h;
-        int w;
-        int id_quant;
-    };
+    sof0(int length, int precision, int heigth, int width, int cnt_channels, vector<channel> channels) :
+    length_(length), precision_(precision), heigth_(heigth), width_(width), cnt_channels_(cnt_channels),
+    channels_(channels) {}
 
+private:
     int length_;
     int precision_;
     int heigth_;
@@ -251,7 +285,7 @@ private:
     int length_;
     int class_;
     int id_;
-    vector<vector<int> > codes_;
+    vector<vector<int>> codes_;
     tree *start;
 };
 
