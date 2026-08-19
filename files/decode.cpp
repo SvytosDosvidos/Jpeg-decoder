@@ -215,15 +215,14 @@ private:
     vector<channel> channels_;
 };
 
+struct tree {
+    int num;
+
+    tree *l;
+    tree *r;
+};
+
 class dht {
-private:
-    struct tree {
-        int num;
-
-        tree *l;
-        tree *r;
-    };
-
 public:
     dht(Section &section) {
         length_ = section.get_length();
@@ -240,43 +239,44 @@ public:
             }
             ind += codes_[i].size();
         }
+
+        flag_create_tree = true;
+        create_tree();
+        cout << "flag = " << flag_create_tree << "\n";
     }
 
-    void dfs(tree *v, int num, int this_d, int d) {
-        if (!v->l || (v->l && v->l->num == -1)) {
-            if (!v->l) {
-                *v->l = {-1, nullptr, nullptr};
-                if (this_d == d) {
-                    v->l->num = num;
-                    return;
-                } else {
-                    dfs(v->l, num, this_d + 1, d);
-                }
-            } else {
-                dfs(v->l, num, this_d + 1, d);
+    bool dfs(int cur_h, tree* cur, int h, int num) {
+        if (cur_h < h) {
+            if (!cur->l) {
+                cur->l = new tree({-1, nullptr, nullptr});
             }
-        }
+            bool l_flag = dfs(cur_h + 1, cur->l, h, num);
+            if (l_flag) {
+                return true;
+            }
 
-        if (!v->l || (v->l && v->l->num == -1)) {
-            if (!v->l) {
-                *v->l = {-1, nullptr, nullptr};
-                if (this_d == d) {
-                    v->l->num = num;
-                    return;
-                } else {
-                    dfs(v->l, num, this_d + 1, d);
-                }
-            } else {
-                dfs(v->l, num, this_d + 1, d);
+            if (!cur->r) {
+                cur->r = new tree({-1, nullptr, nullptr});
             }
+            bool r_flag = dfs(cur_h + 1, cur->r, h, num);
+            return r_flag;
+        } else {
+            if (cur->num == -1) {
+                cur->num = num;
+                return true;
+            }
+            return false;
         }
     }
 
     void create_tree() {
-        *start = {-1, nullptr, nullptr};
-        for (int i = 0; i < codes_.size(); i++) {
-            int cnt = codes_[i].size();
-            while (cnt--) {
+        start = new tree({-1, nullptr, nullptr});
+        for (int i = 0; i < 16; i++) {
+            for (int j = 0; j < codes_[i].size(); j++) {
+                flag_create_tree &= dfs(0, start, i + 1, codes_[i][j]);
+                if (!flag_create_tree) {
+                    return;
+                }
             }
         }
     }
@@ -287,6 +287,8 @@ private:
     int id_;
     vector<vector<int>> codes_;
     tree *start;
+
+    bool flag_create_tree;
 };
 
 class decoder {

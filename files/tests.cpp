@@ -22,8 +22,8 @@ TEST_CASE("test_jpg.jpg") {
     CHECK(jpg_decoder.get_is_open());
 
     CHECK(jpg_decoder.get_size_table_quants() == 2);
-    CHECK(jpg_decoder.get_size_dhts() == 4);
     CHECK(jpg_decoder.get_size_sof0s() == 1);
+    CHECK(jpg_decoder.get_size_dhts() == 4);
 
     //check table_quants
     vector<table_quant> table_quants;
@@ -68,4 +68,15 @@ TEST_CASE("test_jpg.jpg") {
     sof0 first_sof0(17, 8, 16, 16, 3, channels);
 
     CHECK(first_sof0 == jpg_decoder.get_sof0(0));
+
+    /*
+    Для удобства написания тестов, делать их не вручную, а как в статье
+    1 - поворот направо, 0 - налево, к примеру, и так однозначно задать каждую вершину
+    и сравнить, что они совпадают, и смотреть только какие-то ключевые, а во всех
+    остальных, которые как бы неважны, посмотреть, что там лежит -1
+
+    И сделать проверку на то, что дерево может быть не построено во все
+
+    tree* start_tree_1 = new tree({-1, nullptr, nullptr});
+    start_tree_1->l = new tree({0x, nullptr, nullptr});*/
 }
