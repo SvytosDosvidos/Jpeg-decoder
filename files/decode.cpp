@@ -1,7 +1,6 @@
 #include<iostream>
 #include<vector>
 #include<string>
-#include<set>
 #include<map>
 #include<math.h>
 #include<algorithm>
@@ -224,9 +223,14 @@ struct tree {
 
 class dht {
 public:
+    dht(int length, int type_dht, int id, bool flag_create_tree,
+        map<string, int> tree_list) : length_(length),
+    type_dht_(type_dht), id_(id), flag_create_tree_(flag_create_tree),
+    tree_list_(tree_list) {}
+
     dht(Section &section) {
         length_ = section.get_length();
-        class_ = section.get_buffer_el(2) / 16;
+        type_dht_ = section.get_buffer_el(2) / 16;
         id_ = section.get_buffer_el(2) % 16;
 
         codes_.resize(16);
@@ -240,26 +244,47 @@ public:
             ind += codes_[i].size();
         }
 
-        flag_create_tree = true;
+        flag_create_tree_ = true;
         create_tree();
-        cout << "flag = " << flag_create_tree << "\n";
     }
 
-    bool dfs(int cur_h, tree* cur, int h, int num) {
+    bool operator==(const dht& other) const {
+        return length_ == other.length_
+            && type_dht_ == other.type_dht_
+            && id_ == other.id_
+            && flag_create_tree_ == other.flag_create_tree_
+            && tree_list_ == other.tree_list_;
+    }
+
+    bool dfs(int cur_h, tree* cur, int h, int num, string &key) {
         if (cur_h < h) {
             if (!cur->l) {
                 cur->l = new tree({-1, nullptr, nullptr});
             }
-            bool l_flag = dfs(cur_h + 1, cur->l, h, num);
-            if (l_flag) {
-                return true;
+
+            if (cur->l->num == -1) {
+                key += "0";
+                bool flag_l = dfs(cur_h + 1, cur->l, h, num, key);
+                if (flag_l) {
+                    return flag_l;
+                }
+                key.pop_back();
             }
 
             if (!cur->r) {
                 cur->r = new tree({-1, nullptr, nullptr});
             }
-            bool r_flag = dfs(cur_h + 1, cur->r, h, num);
-            return r_flag;
+
+            if (cur->r->num == -1) {
+                key += "1";
+                bool flag_r = dfs(cur_h + 1, cur->r, h, num, key);
+                if (flag_r) {
+                    return flag_r;
+                }
+                key.pop_back();
+            }
+
+            return false;
         } else {
             if (cur->num == -1) {
                 cur->num = num;
@@ -269,26 +294,48 @@ public:
         }
     }
 
+    void print_dfs() {
+        cout << "start_print\n";
+        print_dfs(start);
+    }
+
+    void print_dfs(tree *cur) {
+        if (!cur) {
+            cout << "\n";
+            return;
+        }
+        cout << cur->num << "\n";
+        cout << "l: ";
+        print_dfs(cur->l);
+        cout << "r: ";
+        print_dfs(cur->r);
+    }
+
     void create_tree() {
         start = new tree({-1, nullptr, nullptr});
         for (int i = 0; i < 16; i++) {
             for (int j = 0; j < codes_[i].size(); j++) {
-                flag_create_tree &= dfs(0, start, i + 1, codes_[i][j]);
-                if (!flag_create_tree) {
+                string key = "";
+                flag_create_tree_ &= dfs(0, start, i + 1, codes_[i][j], key);
+                tree_list_[key] = codes_[i][j];
+                if (!flag_create_tree_) {
                     return;
                 }
             }
         }
+
+        cout << "\n";
     }
 
 private:
     int length_;
-    int class_;
+    int type_dht_;
     int id_;
     vector<vector<int>> codes_;
     tree *start;
 
-    bool flag_create_tree;
+    bool flag_create_tree_;
+    map<std::string, int> tree_list_;
 };
 
 class decoder {

@@ -69,14 +69,38 @@ TEST_CASE("test_jpg.jpg") {
 
     CHECK(first_sof0 == jpg_decoder.get_sof0(0));
 
-    /*
-    Для удобства написания тестов, делать их не вручную, а как в статье
-    1 - поворот направо, 0 - налево, к примеру, и так однозначно задать каждую вершину
-    и сравнить, что они совпадают, и смотреть только какие-то ключевые, а во всех
-    остальных, которые как бы неважны, посмотреть, что там лежит -1
+    //dht
+    map<string, int> tree_list_dht_1;
+    tree_list_dht_1["0"] = 0x03;
+    tree_list_dht_1["01"] = 0x02;
 
-    И сделать проверку на то, что дерево может быть не построено во все
+    map<string, int> tree_list_dht_2;
+    tree_list_dht_2["0"] = 0x01;
+    tree_list_dht_2["100"] = 0x00;
+    tree_list_dht_2["101"] = 0x12;
+    tree_list_dht_2["1100"] = 0x02;
+    tree_list_dht_2["1101"] = 0x11;
+    tree_list_dht_2["1110"] = 0x31;
+    tree_list_dht_2["11110"] = 0x21;
 
-    tree* start_tree_1 = new tree({-1, nullptr, nullptr});
-    start_tree_1->l = new tree({0x, nullptr, nullptr});*/
+    map<string, int> tree_list_dht_3;
+    tree_list_dht_3["0"] = 0x00;
+    tree_list_dht_3["10"] = 0x01;
+
+    map<string, int> tree_list_dht_4;
+    tree_list_dht_4["0"] = 0x11;
+    tree_list_dht_4["10"] = 0x00;
+    tree_list_dht_4["110"] = 0x01;
+
+    dht dht_1(0x15, 0, 0, true, tree_list_dht_1);
+    dht dht_2(0x1A, 1, 0, true, tree_list_dht_1);
+    dht dht_3(0x15, 0, 1, true, tree_list_dht_1);
+    dht dht_4(0x16, 1, 1, true, tree_list_dht_1);
+
+    vector<dht> dhts;
+    for (int i = 0; i < dhts.size(); i++) {
+        CHECK(dhts[i] == jpg_decoder.get_dht(i));
+    }
+
+
 }
