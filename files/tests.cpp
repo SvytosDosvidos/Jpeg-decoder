@@ -24,6 +24,7 @@ TEST_CASE("test_jpg.jpg") {
     CHECK(jpg_decoder.get_size_table_quants() == 2);
     CHECK(jpg_decoder.get_size_sof0s() == 1);
     CHECK(jpg_decoder.get_size_dhts() == 4);
+    CHECK(jpg_decoder.get_size_soss() == 1);
 
     //check table_quants
     vector<table_quant> table_quants;
@@ -102,5 +103,12 @@ TEST_CASE("test_jpg.jpg") {
         CHECK(dhts[i] == jpg_decoder.get_dht(i));
     }
 
+    //sos
+    vector<channel_sos> channels_sos;
+    channels_sos.push_back({1, 0, 0});
+    channels_sos.push_back({2, 1, 1});
+    channels_sos.push_back({3, 1, 1});
+    sos sos_1(12, 3, channels_sos);
 
+    CHECK(sos_1 == jpg_decoder.get_sos(0));
 }

@@ -338,6 +338,49 @@ private:
     map<std::string, int> tree_list_;
 };
 
+struct channel_sos {
+    int id;
+    int id_DC;
+    int id_AC;
+
+    bool operator==(const channel_sos& other) const {
+        return id == other.id
+        && id_DC == other.id_DC
+        && id_AC == other.id_AC;
+    }
+};
+
+class sos {
+public:
+    sos(Section &section) {
+        length_ = section.get_length();
+        cnt_channels_ = section.get_buffer_el(2);
+        channels_.resize(cnt_channels_);
+
+        for (int i = 0; i < cnt_channels_; i++) {
+            channel_sos cur_channel;
+            cur_channel.id = section.get_buffer_el(2 * i + 3);
+            cur_channel.id_DC = section.get_buffer_el(2 * i + 4)/16;
+            cur_channel.id_AC = section.get_buffer_el(2 * i + 4)%16;
+            channels_[i] = cur_channel;
+        }
+    }
+
+    sos(int length, int cnt_channel, vector<channel_sos> channels) :
+    length_(length), cnt_channels_(cnt_channel), channels_(channels) {}
+
+    bool operator==(const sos& other) const {
+        return length_ == other.length_
+        && cnt_channels_ == other.cnt_channels_
+        && channels_ == other.channels_;
+    }
+
+private:
+    int length_;
+    int cnt_channels_;
+    vector<channel_sos> channels_;
+};
+
 class decoder {
 public:
     void decode(string path) {
@@ -373,11 +416,9 @@ public:
         mapf[0xD9] = 0;
 
         int i = 0;
-        vector<int> nums;
         bool findDA = false;
         while (i + 1 < size) {
             if (buffer[i] == MARKER && mapf.find(buffer[i + 1]) != mapf.end()) {
-
                 int indStart = i + 2;
                 Section this_section(buffer[i + 1], mapf[buffer[i + 1]]);
                 for (int j = indStart; j < indStart + this_section.get_cnt_byte_4_length(); j++) {
@@ -393,6 +434,8 @@ public:
 
                 if (this_section.get_marker() == 0xDA) {
                     findDA = true;
+                    sos new_sos(this_section);
+                    _soss.push_back(new_sos);
                 } else if (this_section.get_marker() == 0xDB) {
                     table_quant new_table_quant(this_section);
                     _table_quants.push_back(new_table_quant);
@@ -404,12 +447,14 @@ public:
                     _dhts.push_back(new_dht);
                 }
             } else if (findDA) {
-                nums.push_back(buffer[i]);
+                end_symbols_.push_back(buffer[i]);
                 i++;
             } else {
                 //throw
             }
         }
+
+        cout << end_symbols_.size() << "\n";
     }
 
     int get_size_table_quants() const {
@@ -422,6 +467,10 @@ public:
 
     int get_size_dhts() const {
         return _dhts.size();
+    }
+
+    int get_size_soss() const {
+        return _soss.size();
     }
 
     bool get_is_open() const {
@@ -439,10 +488,16 @@ public:
     table_quant get_table_quant(int ind) const {
         return _table_quants[ind];
     }
+
+    sos get_sos(int ind) const {
+        return _soss[ind];
+    }
 private:
     vector<table_quant> _table_quants;
     vector<sof0> _sof0s;
     vector<dht> _dhts;
+    vector<sos> _soss;
 
+    vector<int> end_symbols_;
     bool _is_open;
 };
