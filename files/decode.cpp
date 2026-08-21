@@ -81,7 +81,14 @@ public:
     table_quant &operator=(table_quant &&) = default;
 
     table_quant(Section &section) {
+        flag_use_bytes_ = true;
         length_ = section.get_length();
+
+        if (length_ != 67) {
+            flag_use_bytes_ = false;
+            return;
+        }
+
         size_byte_ = 1 + section.get_buffer_el(2) / 16;
         ind_table_ = section.get_buffer_el(2) % 16;
 
@@ -160,6 +167,8 @@ private:
     int ind_table_;
 
     vector<vector<int>> matrix_;
+
+    bool flag_use_bytes_;
 };
 
 struct channel {
@@ -186,12 +195,25 @@ public:
     }
 
     sof0(Section &section) {
+        flag_use_bytes_ = true;
         length_ = section.get_length();
+
+        if (length_ < 8) {
+            flag_use_bytes_ = false;
+            return;
+        }
+
         precision_ = section.get_buffer_el(2);
         heigth_ = section.get_buffer_el(3, 4);
         width_ = section.get_buffer_el(5, 6);
         cnt_channels_ = section.get_buffer_el(7);
         channels_.resize(cnt_channels_);
+
+        if (3 * cnt_channels_ + 8 != length_) {
+            flag_use_bytes_ = false;
+            return;
+        }
+
         for (int i = 8; i < section.get_length(); i += 3) {
             int ind = (i - 8) / 3;
             channels_[ind] = {
@@ -212,6 +234,8 @@ private:
     int width_;
     int cnt_channels_;
     vector<channel> channels_;
+
+    bool flag_use_bytes_;
 };
 
 struct tree {
@@ -229,11 +253,27 @@ public:
     tree_list_(tree_list) {}
 
     dht(Section &section) {
+        flag_use_bytes_ = true;
         length_ = section.get_length();
+
+        if (length_ < 19) {
+            flag_use_bytes_ = false;
+            return;
+        }
+
         type_dht_ = section.get_buffer_el(2) / 16;
         id_ = section.get_buffer_el(2) % 16;
 
         codes_.resize(16);
+
+        for (int i = 3; i < 19; i++) {
+            sum_bytes_ += section.get_buffer_el(i);
+        }
+
+        if (3 + 16 + sum_bytes_ != length_) {
+            flag_use_bytes_ = false;
+            return;
+        }
 
         int ind = 19;
         for (int i = 0; i < 16; i++) {
@@ -336,6 +376,9 @@ private:
 
     bool flag_create_tree_;
     map<std::string, int> tree_list_;
+
+    int sum_bytes_;
+    bool flag_use_bytes_;
 };
 
 struct channel_sos {
@@ -353,16 +396,34 @@ struct channel_sos {
 class sos {
 public:
     sos(Section &section) {
+        flag_use_bytes_ = true;
         length_ = section.get_length();
-        cnt_channels_ = section.get_buffer_el(2);
-        channels_.resize(cnt_channels_);
 
+        if (length_ < 3) {
+            flag_use_bytes_ = false;
+            return;
+        }
+
+        cnt_channels_ = section.get_buffer_el(2);
+
+        if (2 * cnt_channels_ + 3 + 3 != length_) {
+            flag_use_bytes_ = false;
+            return;
+        }
+
+        channels_.resize(cnt_channels_);
         for (int i = 0; i < cnt_channels_; i++) {
             channel_sos cur_channel;
             cur_channel.id = section.get_buffer_el(2 * i + 3);
             cur_channel.id_DC = section.get_buffer_el(2 * i + 4)/16;
             cur_channel.id_AC = section.get_buffer_el(2 * i + 4)%16;
             channels_[i] = cur_channel;
+        }
+
+        if (section.get_buffer_el(2 * cnt_channels_ + 3) != 0x00 &&
+            section.get_buffer_el(2 * cnt_channels_ + 4) != 0x3F &&
+            section.get_buffer_el(2 * cnt_channels_ + 5) != 0x00) {
+                flag_use_bytes_ = false;
         }
     }
 
@@ -379,6 +440,8 @@ private:
     int length_;
     int cnt_channels_;
     vector<channel_sos> channels_;
+
+    bool flag_use_bytes_;
 };
 
 class decoder {
