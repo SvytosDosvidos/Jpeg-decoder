@@ -18,6 +18,9 @@ public:
                                                      buffer_({}) {
     }
 
+    Section() {
+    }
+
     void add_buffer(int num) {
         if (buffer_.capacity() != length_) {
             buffer_.reserve(length_);
@@ -61,6 +64,37 @@ private:
     int get_cnt_byte_4_length_;
 };
 
+bool go2granintsy(int ind_i) {
+    if (ind_i < 0 || ind_i >= 8) {
+        return true;
+    }
+    return false;
+}
+
+void next_inds(int &ind_i, int &ind_j, int &type) {
+    vector<pair<int, int> > directions = {{-1, 1}, {1, -1}};
+
+    if (go2granintsy(ind_i + directions[type].first) || go2granintsy(ind_j + directions[type].second)) {
+        if (type == 0) {
+            if (!go2granintsy(ind_j + 1)) {
+                ind_j++;
+            } else {
+                ind_i++;
+            }
+        } else {
+            if (!go2granintsy(ind_i + 1)) {
+                ind_i++;
+            } else {
+                ind_j++;
+            }
+        }
+        type = 1 - type;
+    } else {
+        ind_i += directions[type].first;
+        ind_j += directions[type].second;
+    }
+}
+
 const int MARKER = 0xff;
 
 class table_quant {
@@ -69,11 +103,11 @@ public:
 
     table_quant(table_quant &&) = default;
 
-    bool operator==(const table_quant& other) const {
+    bool operator==(const table_quant &other) const {
         return length_ == other.length_
-        && size_byte_ == other.size_byte_
-        && ind_table_ == other.ind_table_
-        && matrix_ == other.matrix_;
+               && size_byte_ == other.size_byte_
+               && ind_table_ == other.ind_table_
+               && matrix_ == other.matrix_;
     }
 
     table_quant &operator=(const table_quant &) = default;
@@ -95,19 +129,13 @@ public:
         create_matrix(section);
     }
 
-    table_quant(int length, int size_byte, int ind_table, vector<vector<int>> &matrix) :
-        length_(length), size_byte_(size_byte), ind_table_(ind_table), matrix_(matrix) {};
-
-    bool go2granintsy(int ind_i) {
-        if (ind_i < 0 || ind_i >= 8) {
-            return true;
-        }
-        return false;
-    }
+    table_quant(int length, int size_byte, int ind_table, vector<vector<int> > &matrix) : length_(length),
+        size_byte_(size_byte), ind_table_(ind_table), matrix_(matrix) {
+    };
 
     void create_matrix(Section &section) {
         int ind_i = 0, ind_j = 0;
-        vector<pair<int, int>> directions = {{-1,1}, {1, -1}};
+        vector<pair<int, int> > directions = {{-1, 1}, {1, -1}};
         int type = 0;
         int ind = 0;
         matrix_.resize(8);
@@ -117,26 +145,8 @@ public:
 
         while (ind < 64) {
             matrix_[ind_i][ind_j] = section.get_buffer_el(3 + ind);
-            if (go2granintsy(ind_i + directions[type].first) || go2granintsy(ind_j + directions[type].second)) {
-                ind++;
-                if (type == 0) {
-                    if (!go2granintsy(ind_j + 1)) {
-                        ind_j++;
-                    } else {
-                        ind_i++;
-                    }
-                } else {
-                    if (!go2granintsy(ind_i + 1)) {
-                        ind_i++;
-                    } else {
-                        ind_j++;
-                    }
-                }
-                matrix_[ind_i][ind_j] = section.get_buffer_el(3 + ind);
-                type = 1 - type;
-            }
-            ind_i += directions[type].first;
-            ind_j += directions[type].second;
+
+            next_inds(ind_i, ind_j, type);
             ind++;
         }
     }
@@ -157,7 +167,7 @@ public:
         return matrix_[i][j];
     }
 
-    vector<vector<int>> get_matrix() const {
+    vector<vector<int> > get_matrix() const {
         return matrix_;
     }
 
@@ -166,7 +176,7 @@ private:
     int size_byte_;
     int ind_table_;
 
-    vector<vector<int>> matrix_;
+    vector<vector<int> > matrix_;
 
     bool flag_use_bytes_;
 };
@@ -177,21 +187,21 @@ struct channel {
     int w;
     int id_quant;
 
-    bool operator==(const channel& other) const {
+    bool operator==(const channel &other) const {
         return id == other.id && h == other.h
-        && w == other.w && id_quant == other.id_quant;
+               && w == other.w && id_quant == other.id_quant;
     }
 };
 
 class sof0 {
 public:
-    bool operator==(const sof0& other) const {
+    bool operator==(const sof0 &other) const {
         return length_ == other.length_
-        && precision_ == other.precision_
-        && heigth_ == other.heigth_
-        && width_ == other.width_
-        && cnt_channels_ == other.cnt_channels_
-        && channels_ == other.channels_;
+               && precision_ == other.precision_
+               && heigth_ == other.heigth_
+               && width_ == other.width_
+               && cnt_channels_ == other.cnt_channels_
+               && channels_ == other.channels_;
     }
 
     sof0(Section &section) {
@@ -223,9 +233,11 @@ public:
         }
     }
 
-    sof0(int length, int precision, int heigth, int width, int cnt_channels, vector<channel> channels) :
-    length_(length), precision_(precision), heigth_(heigth), width_(width), cnt_channels_(cnt_channels),
-    channels_(channels) {}
+    sof0(int length, int precision, int heigth, int width, int cnt_channels,
+         vector<channel> channels) : length_(length), precision_(precision), heigth_(heigth), width_(width),
+                                     cnt_channels_(cnt_channels),
+                                     channels_(channels) {
+    }
 
 private:
     int length_;
@@ -249,8 +261,9 @@ class dht {
 public:
     dht(int length, int type_dht, int id, bool flag_create_tree,
         map<string, int> tree_list) : length_(length),
-    type_dht_(type_dht), id_(id), flag_create_tree_(flag_create_tree),
-    tree_list_(tree_list) {}
+                                      type_dht_(type_dht), id_(id), flag_create_tree_(flag_create_tree),
+                                      tree_list_(tree_list) {
+    }
 
     dht(Section &section) {
         flag_use_bytes_ = true;
@@ -288,15 +301,15 @@ public:
         create_tree();
     }
 
-    bool operator==(const dht& other) const {
+    bool operator==(const dht &other) const {
         return length_ == other.length_
-            && type_dht_ == other.type_dht_
-            && id_ == other.id_
-            && flag_create_tree_ == other.flag_create_tree_
-            && tree_list_ == other.tree_list_;
+               && type_dht_ == other.type_dht_
+               && id_ == other.id_
+               && flag_create_tree_ == other.flag_create_tree_
+               && tree_list_ == other.tree_list_;
     }
 
-    bool dfs(int cur_h, tree* cur, int h, int num, string &key) {
+    bool dfs(int cur_h, tree *cur, int h, int num, string &key) {
         if (cur_h < h) {
             if (!cur->l) {
                 cur->l = new tree({-1, nullptr, nullptr});
@@ -371,7 +384,7 @@ private:
     int length_;
     int type_dht_;
     int id_;
-    vector<vector<int>> codes_;
+    vector<vector<int> > codes_;
     tree *start;
 
     bool flag_create_tree_;
@@ -386,10 +399,10 @@ struct channel_sos {
     int id_DC;
     int id_AC;
 
-    bool operator==(const channel_sos& other) const {
+    bool operator==(const channel_sos &other) const {
         return id == other.id
-        && id_DC == other.id_DC
-        && id_AC == other.id_AC;
+               && id_DC == other.id_DC
+               && id_AC == other.id_AC;
     }
 };
 
@@ -415,25 +428,26 @@ public:
         for (int i = 0; i < cnt_channels_; i++) {
             channel_sos cur_channel;
             cur_channel.id = section.get_buffer_el(2 * i + 3);
-            cur_channel.id_DC = section.get_buffer_el(2 * i + 4)/16;
-            cur_channel.id_AC = section.get_buffer_el(2 * i + 4)%16;
+            cur_channel.id_DC = section.get_buffer_el(2 * i + 4) / 16;
+            cur_channel.id_AC = section.get_buffer_el(2 * i + 4) % 16;
             channels_[i] = cur_channel;
         }
 
         if (section.get_buffer_el(2 * cnt_channels_ + 3) != 0x00 &&
             section.get_buffer_el(2 * cnt_channels_ + 4) != 0x3F &&
             section.get_buffer_el(2 * cnt_channels_ + 5) != 0x00) {
-                flag_use_bytes_ = false;
+            flag_use_bytes_ = false;
         }
     }
 
-    sos(int length, int cnt_channel, vector<channel_sos> channels) :
-    length_(length), cnt_channels_(cnt_channel), channels_(channels) {}
+    sos(int length, int cnt_channel, vector<channel_sos> channels) : length_(length), cnt_channels_(cnt_channel),
+                                                                     channels_(channels) {
+    }
 
-    bool operator==(const sos& other) const {
+    bool operator==(const sos &other) const {
         return length_ == other.length_
-        && cnt_channels_ == other.cnt_channels_
-        && channels_ == other.channels_;
+               && cnt_channels_ == other.cnt_channels_
+               && channels_ == other.channels_;
     }
 
 private:
@@ -516,8 +530,6 @@ public:
                 //throw
             }
         }
-
-        cout << end_symbols_.size() << "\n";
     }
 
     int get_size_table_quants() const {
@@ -555,6 +567,7 @@ public:
     sos get_sos(int ind) const {
         return _soss[ind];
     }
+
 private:
     vector<table_quant> _table_quants;
     vector<sof0> _sof0s;
@@ -563,4 +576,66 @@ private:
 
     vector<int> end_symbols_;
     bool _is_open;
+};
+
+class creatorMatrix {
+public:
+    void createMatrix(vector<char> &symbols, map<std::string, int> tree_list_dc, map<std::string, int> tree_list_ac) {
+        find_dc_ = false;
+        string cur_str;
+
+        int cur_i = 0, cur_j = 0;
+
+        for (int i = 0; i < symbols.size(); i++) {
+            cur_str.push_back(symbols[i]);
+            if (!find_dc_) {
+                if (tree_list_dc.find(cur_str) != tree_list_dc.end()) {
+                    int k_dc = 0;
+                    for (int j = i + 1; j < i + tree_list_dc[cur_str]; j++) {
+                        k_dc *= 2;
+                        k_dc += symbols[j] - '0';
+                    }
+
+                    if (symbols[i + 1] == '0') {
+                        k_dc = k_dc - pow(2, tree_list_dc[cur_str]) + 1;
+                    }
+
+                    matrix[cur_i][cur_j] = k_dc;
+                    i += tree_list_dc[cur_str];
+                    cur_str.clear();
+
+                    find_dc_ = true;
+                }
+            } else {
+                if (tree_list_ac.find(cur_str) != tree_list_ac.end()) {
+                    if (tree_list_ac[cur_str] == 0) {
+                        return;
+                    }
+                    int k_ac_1 = tree_list_ac[cur_str] / 16, k_ac_2 = tree_list_ac[cur_str] % 16;
+                    while (k_ac_1--) {
+                        matrix[cur_i][cur_j] = 0;
+                    }
+
+                    int k_ac = 0;
+
+                    for (int j = i + k_ac_1 + 1; j < i + k_ac_1 + k_ac_2; j++) {
+                        k_ac *= 2;
+                        k_ac += symbols[j] - '0';
+                    }
+
+                    if (symbols[i + k_ac_1 + 1] == '0') {
+                        k_ac = k_ac - pow(2, k_ac_2) + 1;
+                    }
+
+                    matrix[cur_i][cur_j] = k_ac;
+                    i += k_ac_1 + k_ac_2;
+                    cur_str.clear();
+                }
+            }
+        }
+    }
+
+private:
+    bool find_dc_;
+    vector<vector<int> > matrix;
 };
