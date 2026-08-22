@@ -494,6 +494,16 @@ public:
         }
     }
 
+    bool operator== (const creatorMatrix &other) const {
+        return last_use_byte_ == other.last_use_byte_
+        && create_matrix_ == other.create_matrix_
+        && find_dc_ == other.find_dc_
+        && matrix_ == other.matrix_;
+    }
+
+    creatorMatrix(int last_use_byte, bool create_matrix, bool find_dc, vector<vector<int>> matrix) :
+        last_use_byte_(last_use_byte), create_matrix_(create_matrix), find_dc_(find_dc), matrix_(matrix) {}
+
     void createMatrix(vector<char> &symbols, map<std::string, int> tree_list_dc, map<std::string, int> tree_list_ac) {
         find_dc_ = false;
         create_matrix_ = true;
@@ -811,6 +821,14 @@ public:
 
     sos get_sos(int ind) const {
         return _soss[ind];
+    }
+
+    int get_size_creator_matrix_y() const {
+        return creator_matrix_y_.size();
+    }
+
+    creatorMatrix get_creator_matrix_y(int ind) const {
+        return creator_matrix_y_[ind];
     }
 
 private:

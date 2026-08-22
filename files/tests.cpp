@@ -116,5 +116,65 @@ TEST_CASE("test_jpg.jpg") {
 
     CHECK(sos_1 == jpg_decoder.get_sos(0));
 
+    //Create matrix Y
+    vector<vector<int>> matrix_y_1 = {
+        {2, 0, 3, 0, 0, 0, 0, 0},
+        {0, 1, 2, 0, 0, 0, 0, 0},
+        {0, -1, -1, 0, 0, 0, 0, 0},
+        {1, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0}
+    };
 
+    vector<vector<int>> matrix_y_2 = {
+        {-2, 1, 1, 1, 0, 0, 0, 0},
+        {0, 0, 1, 0, 0, 0, 0, 0},
+        {0, -1, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0}
+    };
+
+    vector<vector<int>> matrix_y_3 = {
+        {3, -1, 1, 0, 0, 0, 0, 0},
+        {-1, -2, -1, 0, 0, 0, 0, 0},
+        {0, -1, 0, 0, 0, 0, 0, 0},
+        {-1, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0}
+    };
+
+    vector<vector<int>> matrix_y_4 = {
+        {-1, 2, 2, 1, 0, 0, 0, 0},
+        {-1, 0, -1, 0, 0, 0, 0, 0},
+        {-1, -1, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0}
+    };
+
+    creatorMatrix creator_matrix_y_1(32, true, true, matrix_y_1);
+    creatorMatrix creator_matrix_y_2(19, true, true, matrix_y_2);
+    creatorMatrix creator_matrix_y_3(26, true, true, matrix_y_3);
+    creatorMatrix creator_matrix_y_4(27, true, true, matrix_y_4);
+
+    vector<creatorMatrix> creator_matrix_y;
+    creator_matrix_y.push_back(creator_matrix_y_1);
+    creator_matrix_y.push_back(creator_matrix_y_2);
+    creator_matrix_y.push_back(creator_matrix_y_3);
+    creator_matrix_y.push_back(creator_matrix_y_4);
+
+    CHECK(jpg_decoder.get_size_creator_matrix_y() == 4);
+
+    for (int i = 0; i < 4; i++) {
+        CHECK(jpg_decoder.get_creator_matrix_y(i) == creator_matrix_y[i]);
+    }
 }
