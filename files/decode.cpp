@@ -380,6 +380,14 @@ public:
         cout << "\n";
     }
 
+    int get_type_dht() const {
+        return type_dht_;
+    }
+
+    int get_id() const {
+        return id_;
+    }
+
 private:
     int length_;
     int type_dht_;
@@ -530,6 +538,34 @@ public:
                 //throw
             }
         }
+
+        createMatrix();
+    }
+
+    static bool comp_dht(const dht& l, const dht& r) {
+        return l.get_id() < r.get_id();
+    }
+
+    void createMatrix() {
+        vector<dht> dc;
+        vector<dht> ac;
+
+        for (int i = 0; i < get_size_dhts(); i++) {
+            if (get_dht(i).get_type_dht() == 0) {
+                dc.push_back(get_dht(i));
+            } else {
+                ac.push_back(get_dht(i));
+            }
+        }
+
+        sort(dc.begin(), dc.end(), comp_dht);
+        sort(ac.begin(), ac.end(), comp_dht);
+
+        for (int i = 0; i < dc.size(); i++) {
+            for (int j = 0; j < ac.size(); j++) {
+                //creatorMatrix creator();
+            }
+        }
     }
 
     int get_size_table_quants() const {
@@ -582,15 +618,23 @@ class creatorMatrix {
 public:
     void createMatrix(vector<char> &symbols, map<std::string, int> tree_list_dc, map<std::string, int> tree_list_ac) {
         find_dc_ = false;
+        create_matrix_ = true;
         string cur_str;
 
-        int cur_i = 0, cur_j = 0;
+        int cur_i = 0, cur_j = 0, type = 0;
 
         for (int i = 0; i < symbols.size(); i++) {
             cur_str.push_back(symbols[i]);
             if (!find_dc_) {
                 if (tree_list_dc.find(cur_str) != tree_list_dc.end()) {
                     int k_dc = 0;
+
+                    if (i + tree_list_dc[cur_str] > symbols.size()) {
+                        create_matrix_ = false;
+                        cnt_use_byte_ = i;
+                        return;
+                    }
+
                     for (int j = i + 1; j < i + tree_list_dc[cur_str]; j++) {
                         k_dc *= 2;
                         k_dc += symbols[j] - '0';
@@ -601,6 +645,9 @@ public:
                     }
 
                     matrix[cur_i][cur_j] = k_dc;
+
+                    next_inds(cur_i, cur_j, type);
+
                     i += tree_list_dc[cur_str];
                     cur_str.clear();
 
@@ -609,14 +656,27 @@ public:
             } else {
                 if (tree_list_ac.find(cur_str) != tree_list_ac.end()) {
                     if (tree_list_ac[cur_str] == 0) {
+                        cnt_use_byte_ = i;
                         return;
                     }
                     int k_ac_1 = tree_list_ac[cur_str] / 16, k_ac_2 = tree_list_ac[cur_str] % 16;
                     while (k_ac_1--) {
                         matrix[cur_i][cur_j] = 0;
+                        if (cur_i == 7 && cur_j == 7) {
+                            cnt_use_byte_ = i;
+                            return;
+                        }
+
+                        next_inds(cur_i, cur_j, type);
                     }
 
                     int k_ac = 0;
+
+                    if (i + k_ac_1 + k_ac_2 > symbols.size()) {
+                        cnt_use_byte_ = i;
+                        create_matrix_ = false;
+                        return;
+                    }
 
                     for (int j = i + k_ac_1 + 1; j < i + k_ac_1 + k_ac_2; j++) {
                         k_ac *= 2;
@@ -628,6 +688,12 @@ public:
                     }
 
                     matrix[cur_i][cur_j] = k_ac;
+                    if (cur_i == 7 && cur_j == 7) {
+                        cnt_use_byte_ = i;
+                        return;
+                    }
+
+                    next_inds(cur_i, cur_j, type);
                     i += k_ac_1 + k_ac_2;
                     cur_str.clear();
                 }
@@ -636,6 +702,9 @@ public:
     }
 
 private:
+    int cnt_use_byte_;
+
+    bool create_matrix_;
     bool find_dc_;
-    vector<vector<int> > matrix;
+    vector<vector<int>> matrix;
 };

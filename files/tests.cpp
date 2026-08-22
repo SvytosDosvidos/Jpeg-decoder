@@ -111,4 +111,7 @@ TEST_CASE("test_jpg.jpg") {
     sos sos_1(12, 3, channels_sos);
 
     CHECK(sos_1 == jpg_decoder.get_sos(0));
+
+    //Creatror Matrix
+    //creatorMatrix creator_1();
 }
