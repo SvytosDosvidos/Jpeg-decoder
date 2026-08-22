@@ -300,13 +300,6 @@ public:
 
         flag_create_tree_ = true;
         create_tree();
-
-        /*
-        cout << "print:\n";
-        for (auto &it : tree_list_) {
-            cout << "it = " << it.first << " " << it.second << "\n";
-        }
-        cout << "\n\n";*/
     }
 
     bool operator==(const dht &other) const {
@@ -506,11 +499,6 @@ public:
         create_matrix_ = true;
         string cur_str;
 
-        for (int i = 0; i < 33; i++) {
-            cout << symbols[i];
-        }
-        cout << "\n";
-
         int cur_i = 0, cur_j = 0, type = 0;
 
         for (int i = 0; i < symbols.size(); i++) {
@@ -545,7 +533,6 @@ public:
                 }
             } else {
                 if (tree_list_ac.find(cur_str) != tree_list_ac.end()) {
-                    //cout << "blue = "  << cur_str << " " << tree_list_ac[cur_str] << "\n";
                     if (tree_list_ac[cur_str] == 0) {
                         last_use_byte_ = i;
                         return;
@@ -559,7 +546,6 @@ public:
                             return;
                         }
 
-                        //cout << "zero = " << cur_i << " " << cur_j << "\n";
                         next_inds(cur_i, cur_j, type);
                     }
 
@@ -576,13 +562,11 @@ public:
                         k_ac += symbols[j] - '0';
                     }
 
-                    //cout << i + 1 << " " << k_ac << " " << symbols[i + 1] << "\n";
                     if (symbols[i + 1] == '0') {
                         k_ac = k_ac - pow(2, k_ac_2) + 1;
                     }
 
                     matrix_[cur_i][cur_j] = k_ac;
-                    //cout << "inds = " << cur_i << " " << cur_j << " " << k_ac << "\n\n";
                     if (cur_i == 7 && cur_j == 7) {
                         last_use_byte_ = i;
                         return;
@@ -611,6 +595,14 @@ public:
         return last_use_byte_;
     }
 
+    int get_el_matrix(int ind_i, int ind_j) const {
+        return matrix_[ind_i][ind_j];
+    }
+
+    void set_el_matrix(int ind_i, int ind_j, int el) {
+        matrix_[ind_i][ind_j] = el;
+    }
+
 private:
     int last_use_byte_;
 
@@ -622,6 +614,7 @@ private:
 class decoder {
 public:
     void decode(string path) {
+        creator_matrix_y_.resize(4);
         std::ifstream file(path, std::ios::binary);
 
         if (!file.is_open()) {
@@ -740,13 +733,19 @@ public:
             int id_ac_y = _soss[0].get_id_ac(0);
             creator_y.createMatrix(bytes, dc[id_dc_y].get_tree_list(), ac[id_ac_y].get_tree_list());
 
-            creator_y.print_matrix();
-            cout << "\n";
             reverse(bytes.begin(), bytes.end());
             for (int z = 0; z <= creator_y.get_last_use_byte(); z++) {
                 bytes.pop_back();
             }
             reverse(bytes.begin(), bytes.end());
+
+            if (i != 0) {
+                int new_el = creator_matrix_y_[i - 1].get_el_matrix(0, 0) +
+                    creator_y.get_el_matrix(0, 0);
+                creator_y.set_el_matrix(0, 0, new_el);
+            }
+
+            creator_matrix_y_[i] = creator_y;
         }
 
         //create matrix Cb
@@ -755,13 +754,13 @@ public:
         int id_ac_cb = _soss[0].get_id_ac(1);
         creator_Cb.createMatrix(bytes, dc[id_dc_cb].get_tree_list(), ac[id_ac_cb].get_tree_list());
 
-        creator_Cb.print_matrix();
-        cout << "\n";
         reverse(bytes.begin(), bytes.end());
         for (int z = 0; z <= creator_Cb.get_last_use_byte(); z++) {
             bytes.pop_back();
         }
         reverse(bytes.begin(), bytes.end());
+
+        creator_matrix_Cb_ = creator_Cb;
 
         //create matrix Cr
         creatorMatrix creator_Cr;
@@ -769,13 +768,13 @@ public:
         int id_ac_cr = _soss[0].get_id_ac(2);
         creator_Cr.createMatrix(bytes, dc[id_dc_cr].get_tree_list(), ac[id_ac_cr].get_tree_list());
 
-        creator_Cr.print_matrix();
-        cout << "\n";
         reverse(bytes.begin(), bytes.end());
         for (int z = 0; z <= creator_Cr.get_last_use_byte(); z++) {
             bytes.pop_back();
         }
         reverse(bytes.begin(), bytes.end());
+
+        creator_matrix_Cr_ = creator_Cr;
     }
 
     int get_size_table_quants() const {
@@ -822,4 +821,8 @@ private:
 
     vector<int> end_symbols_;
     bool is_open_;
+
+    vector<creatorMatrix> creator_matrix_y_;
+    creatorMatrix creator_matrix_Cb_;
+    creatorMatrix creator_matrix_Cr_;
 };

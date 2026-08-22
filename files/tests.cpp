@@ -116,6 +116,5 @@ TEST_CASE("test_jpg.jpg") {
 
     CHECK(sos_1 == jpg_decoder.get_sos(0));
 
-    //Creatror Matrix
-    //creatorMatrix creator_1();
+
 }
