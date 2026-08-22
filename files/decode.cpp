@@ -268,6 +268,7 @@ public:
     dht(Section &section) {
         flag_use_bytes_ = true;
         length_ = section.get_length();
+        sum_bytes_ = 0;
 
         if (length_ < 19) {
             flag_use_bytes_ = false;
@@ -299,6 +300,12 @@ public:
 
         flag_create_tree_ = true;
         create_tree();
+
+        /*cout << "print:\n";
+        for (auto &it : tree_list_) {
+            cout << "it = " << it.first << " " << it.second << "\n";
+        }
+        cout << "\n\n";*/
     }
 
     bool operator==(const dht &other) const {
@@ -388,6 +395,10 @@ public:
         return id_;
     }
 
+    map<std::string, int> get_tree_list() const {
+        return tree_list_;
+    }
+
 private:
     int length_;
     int type_dht_;
@@ -464,6 +475,118 @@ private:
     vector<channel_sos> channels_;
 
     bool flag_use_bytes_;
+};
+
+class creatorMatrix {
+public:
+    creatorMatrix() {
+        matrix_.resize(8);
+        for (int i = 0; i < 8; i++) {
+            matrix_[i].resize(8);
+        }
+    }
+
+    void createMatrix(vector<char> &symbols, map<std::string, int> tree_list_dc, map<std::string, int> tree_list_ac) {
+        find_dc_ = false;
+        create_matrix_ = true;
+        string cur_str;
+
+        int cur_i = 0, cur_j = 0, type = 0;
+
+        for (int i = 0; i < symbols.size(); i++) {
+            cur_str.push_back(symbols[i]);
+            if (!find_dc_) {
+                if (tree_list_dc.find(cur_str) != tree_list_dc.end()) {
+                    int k_dc = 0;
+
+                    if (i + tree_list_dc[cur_str] > symbols.size()) {
+                        create_matrix_ = false;
+                        cnt_use_byte_ = i;
+                        return;
+                    }
+
+                    for (int j = i + 1; j < i + tree_list_dc[cur_str]; j++) {
+                        k_dc *= 2;
+                        k_dc += symbols[j] - '0';
+                    }
+
+                    if (symbols[i + 1] == '0') {
+                        k_dc = k_dc - pow(2, tree_list_dc[cur_str]) + 1;
+                    }
+
+                    matrix_[cur_i][cur_j] = k_dc;
+                    cout << "this\n";
+
+                    next_inds(cur_i, cur_j, type);
+
+                    i += tree_list_dc[cur_str];
+                    cur_str.clear();
+
+                    find_dc_ = true;
+                }
+            } else {
+                if (tree_list_ac.find(cur_str) != tree_list_ac.end()) {
+                    if (tree_list_ac[cur_str] == 0) {
+                        cnt_use_byte_ = i;
+                        return;
+                    }
+                    int k_ac_1 = tree_list_ac[cur_str] / 16, k_ac_2 = tree_list_ac[cur_str] % 16;
+                    while (k_ac_1--) {
+                        matrix_[cur_i][cur_j] = 0;
+                        if (cur_i == 7 && cur_j == 7) {
+                            cnt_use_byte_ = i;
+                            return;
+                        }
+
+                        next_inds(cur_i, cur_j, type);
+                    }
+
+                    int k_ac = 0;
+
+                    if (i + k_ac_1 + k_ac_2 > symbols.size()) {
+                        cnt_use_byte_ = i;
+                        create_matrix_ = false;
+                        return;
+                    }
+
+                    for (int j = i + k_ac_1 + 1; j < i + k_ac_1 + k_ac_2; j++) {
+                        k_ac *= 2;
+                        k_ac += symbols[j] - '0';
+                    }
+
+                    if (symbols[i + k_ac_1 + 1] == '0') {
+                        k_ac = k_ac - pow(2, k_ac_2) + 1;
+                    }
+
+                    matrix_[cur_i][cur_j] = k_ac;
+                    if (cur_i == 7 && cur_j == 7) {
+                        cnt_use_byte_ = i;
+                        return;
+                    }
+
+                    next_inds(cur_i, cur_j, type);
+                    i += k_ac_1 + k_ac_2;
+                    cur_str.clear();
+                }
+            }
+        }
+    }
+
+    void print_matrix() {
+        for (int i = 0; i < matrix_.size(); i++) {
+            for (int j = 0; j < matrix_[i].size(); j++) {
+                cout << matrix_[i][j] << " ";
+            }
+            cout << "\n";
+        }
+    }
+
+private:
+    int cnt_use_byte_;
+
+    bool create_matrix_;
+    bool find_dc_;
+    vector<vector<int>> matrix_;
 };
 
 class decoder {
@@ -561,9 +684,35 @@ public:
         sort(dc.begin(), dc.end(), comp_dht);
         sort(ac.begin(), ac.end(), comp_dht);
 
+        vector<char> bytes;
+        for (int i = 0; i < end_symbols_.size(); i++) {
+            int num = end_symbols_[i];
+            string t;
+            while (num > 0) {
+                t.push_back('0' + num % 2);
+                num /= 2;
+            }
+
+            while (!t.empty()) {
+                bytes.push_back(t.back());
+                t.pop_back();
+            }
+        }
+
+        creatorMatrix creator;
+        creator.createMatrix(bytes, dc[0].get_tree_list(), ac[0].get_tree_list());
+
+        cout << "dc:\n";
+        for (auto &it : dc[0].get_tree_list()) {
+            cout << it.first << " " << it.second << "\n";
+        }
+        cout << "\n";
+
+        creator.print_matrix();
+
         for (int i = 0; i < dc.size(); i++) {
             for (int j = 0; j < ac.size(); j++) {
-                //creatorMatrix creator();
+
             }
         }
     }
@@ -612,99 +761,4 @@ private:
 
     vector<int> end_symbols_;
     bool _is_open;
-};
-
-class creatorMatrix {
-public:
-    void createMatrix(vector<char> &symbols, map<std::string, int> tree_list_dc, map<std::string, int> tree_list_ac) {
-        find_dc_ = false;
-        create_matrix_ = true;
-        string cur_str;
-
-        int cur_i = 0, cur_j = 0, type = 0;
-
-        for (int i = 0; i < symbols.size(); i++) {
-            cur_str.push_back(symbols[i]);
-            if (!find_dc_) {
-                if (tree_list_dc.find(cur_str) != tree_list_dc.end()) {
-                    int k_dc = 0;
-
-                    if (i + tree_list_dc[cur_str] > symbols.size()) {
-                        create_matrix_ = false;
-                        cnt_use_byte_ = i;
-                        return;
-                    }
-
-                    for (int j = i + 1; j < i + tree_list_dc[cur_str]; j++) {
-                        k_dc *= 2;
-                        k_dc += symbols[j] - '0';
-                    }
-
-                    if (symbols[i + 1] == '0') {
-                        k_dc = k_dc - pow(2, tree_list_dc[cur_str]) + 1;
-                    }
-
-                    matrix[cur_i][cur_j] = k_dc;
-
-                    next_inds(cur_i, cur_j, type);
-
-                    i += tree_list_dc[cur_str];
-                    cur_str.clear();
-
-                    find_dc_ = true;
-                }
-            } else {
-                if (tree_list_ac.find(cur_str) != tree_list_ac.end()) {
-                    if (tree_list_ac[cur_str] == 0) {
-                        cnt_use_byte_ = i;
-                        return;
-                    }
-                    int k_ac_1 = tree_list_ac[cur_str] / 16, k_ac_2 = tree_list_ac[cur_str] % 16;
-                    while (k_ac_1--) {
-                        matrix[cur_i][cur_j] = 0;
-                        if (cur_i == 7 && cur_j == 7) {
-                            cnt_use_byte_ = i;
-                            return;
-                        }
-
-                        next_inds(cur_i, cur_j, type);
-                    }
-
-                    int k_ac = 0;
-
-                    if (i + k_ac_1 + k_ac_2 > symbols.size()) {
-                        cnt_use_byte_ = i;
-                        create_matrix_ = false;
-                        return;
-                    }
-
-                    for (int j = i + k_ac_1 + 1; j < i + k_ac_1 + k_ac_2; j++) {
-                        k_ac *= 2;
-                        k_ac += symbols[j] - '0';
-                    }
-
-                    if (symbols[i + k_ac_1 + 1] == '0') {
-                        k_ac = k_ac - pow(2, k_ac_2) + 1;
-                    }
-
-                    matrix[cur_i][cur_j] = k_ac;
-                    if (cur_i == 7 && cur_j == 7) {
-                        cnt_use_byte_ = i;
-                        return;
-                    }
-
-                    next_inds(cur_i, cur_j, type);
-                    i += k_ac_1 + k_ac_2;
-                    cur_str.clear();
-                }
-            }
-        }
-    }
-
-private:
-    int cnt_use_byte_;
-
-    bool create_matrix_;
-    bool find_dc_;
-    vector<vector<int>> matrix;
 };

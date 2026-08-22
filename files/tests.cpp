@@ -73,7 +73,7 @@ TEST_CASE("test_jpg.jpg") {
     //dht
     map<string, int> tree_list_dht_1;
     tree_list_dht_1["0"] = 0x03;
-    tree_list_dht_1["01"] = 0x02;
+    tree_list_dht_1["10"] = 0x02;
 
     map<string, int> tree_list_dht_2;
     tree_list_dht_2["0"] = 0x01;
@@ -94,11 +94,15 @@ TEST_CASE("test_jpg.jpg") {
     tree_list_dht_4["110"] = 0x01;
 
     dht dht_1(0x15, 0, 0, true, tree_list_dht_1);
-    dht dht_2(0x1A, 1, 0, true, tree_list_dht_1);
-    dht dht_3(0x15, 0, 1, true, tree_list_dht_1);
-    dht dht_4(0x16, 1, 1, true, tree_list_dht_1);
+    dht dht_2(0x1A, 1, 0, true, tree_list_dht_2);
+    dht dht_3(0x15, 0, 1, true, tree_list_dht_3);
+    dht dht_4(0x16, 1, 1, true, tree_list_dht_4);
 
     vector<dht> dhts;
+    dhts.push_back(dht_1);
+    dhts.push_back(dht_2);
+    dhts.push_back(dht_3);
+    dhts.push_back(dht_4);
     for (int i = 0; i < dhts.size(); i++) {
         CHECK(dhts[i] == jpg_decoder.get_dht(i));
     }
