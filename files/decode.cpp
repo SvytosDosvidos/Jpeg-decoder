@@ -301,7 +301,8 @@ public:
         flag_create_tree_ = true;
         create_tree();
 
-        /*cout << "print:\n";
+        /*
+        cout << "print:\n";
         for (auto &it : tree_list_) {
             cout << "it = " << it.first << " " << it.second << "\n";
         }
@@ -455,8 +456,10 @@ public:
         if (section.get_buffer_el(2 * cnt_channels_ + 3) != 0x00 &&
             section.get_buffer_el(2 * cnt_channels_ + 4) != 0x3F &&
             section.get_buffer_el(2 * cnt_channels_ + 5) != 0x00) {
-            flag_use_bytes_ = false;
+                flag_use_bytes_ = false;
         }
+
+        sort(channels_.begin(), channels_.end(), comp);
     }
 
     sos(int length, int cnt_channel, vector<channel_sos> channels) : length_(length), cnt_channels_(cnt_channel),
@@ -467,6 +470,18 @@ public:
         return length_ == other.length_
                && cnt_channels_ == other.cnt_channels_
                && channels_ == other.channels_;
+    }
+
+    static bool comp(const channel_sos& l, const channel_sos& r) {
+        return l.id < r.id;
+    }
+
+    int get_id_dc(int id) const {
+        return channels_[id].id_DC;
+    }
+
+    int get_id_ac(int id) const {
+        return channels_[id].id_AC;
     }
 
 private:
@@ -491,6 +506,11 @@ public:
         create_matrix_ = true;
         string cur_str;
 
+        for (int i = 0; i < 33; i++) {
+            cout << symbols[i];
+        }
+        cout << "\n";
+
         int cur_i = 0, cur_j = 0, type = 0;
 
         for (int i = 0; i < symbols.size(); i++) {
@@ -501,11 +521,11 @@ public:
 
                     if (i + tree_list_dc[cur_str] > symbols.size()) {
                         create_matrix_ = false;
-                        cnt_use_byte_ = i;
+                        last_use_byte_ = i;
                         return;
                     }
 
-                    for (int j = i + 1; j < i + tree_list_dc[cur_str]; j++) {
+                    for (int j = i + 1; j <= i + tree_list_dc[cur_str]; j++) {
                         k_dc *= 2;
                         k_dc += symbols[j] - '0';
                     }
@@ -515,7 +535,6 @@ public:
                     }
 
                     matrix_[cur_i][cur_j] = k_dc;
-                    cout << "this\n";
 
                     next_inds(cur_i, cur_j, type);
 
@@ -526,46 +545,51 @@ public:
                 }
             } else {
                 if (tree_list_ac.find(cur_str) != tree_list_ac.end()) {
+                    //cout << "blue = "  << cur_str << " " << tree_list_ac[cur_str] << "\n";
                     if (tree_list_ac[cur_str] == 0) {
-                        cnt_use_byte_ = i;
+                        last_use_byte_ = i;
                         return;
                     }
                     int k_ac_1 = tree_list_ac[cur_str] / 16, k_ac_2 = tree_list_ac[cur_str] % 16;
+
                     while (k_ac_1--) {
                         matrix_[cur_i][cur_j] = 0;
                         if (cur_i == 7 && cur_j == 7) {
-                            cnt_use_byte_ = i;
+                            last_use_byte_ = i;
                             return;
                         }
 
+                        //cout << "zero = " << cur_i << " " << cur_j << "\n";
                         next_inds(cur_i, cur_j, type);
                     }
 
                     int k_ac = 0;
 
-                    if (i + k_ac_1 + k_ac_2 > symbols.size()) {
-                        cnt_use_byte_ = i;
+                    if (i + k_ac_2 > symbols.size()) {
+                        last_use_byte_ = i;
                         create_matrix_ = false;
                         return;
                     }
 
-                    for (int j = i + k_ac_1 + 1; j < i + k_ac_1 + k_ac_2; j++) {
+                    for (int j = i + 1; j <= i + k_ac_2; j++) {
                         k_ac *= 2;
                         k_ac += symbols[j] - '0';
                     }
 
-                    if (symbols[i + k_ac_1 + 1] == '0') {
+                    //cout << i + 1 << " " << k_ac << " " << symbols[i + 1] << "\n";
+                    if (symbols[i + 1] == '0') {
                         k_ac = k_ac - pow(2, k_ac_2) + 1;
                     }
 
                     matrix_[cur_i][cur_j] = k_ac;
+                    //cout << "inds = " << cur_i << " " << cur_j << " " << k_ac << "\n\n";
                     if (cur_i == 7 && cur_j == 7) {
-                        cnt_use_byte_ = i;
+                        last_use_byte_ = i;
                         return;
                     }
 
                     next_inds(cur_i, cur_j, type);
-                    i += k_ac_1 + k_ac_2;
+                    i += k_ac_2;
                     cur_str.clear();
                 }
             }
@@ -579,10 +603,16 @@ public:
             }
             cout << "\n";
         }
+
+        cout << last_use_byte_ << "\n";
+    }
+
+    int get_last_use_byte() const {
+        return last_use_byte_;
     }
 
 private:
-    int cnt_use_byte_;
+    int last_use_byte_;
 
     bool create_matrix_;
     bool find_dc_;
@@ -595,7 +625,7 @@ public:
         std::ifstream file(path, std::ios::binary);
 
         if (!file.is_open()) {
-            _is_open = false;
+            is_open_ = false;
             return;
         }
 
@@ -603,7 +633,7 @@ public:
         std::streamsize size = file.tellg();
         file.seekg(0, std::ios::beg);
 
-        _is_open = true;
+        is_open_ = true;
 
         std::vector<int> buffer(size);
         char byte;
@@ -693,28 +723,59 @@ public:
                 num /= 2;
             }
 
+            while (t.size() < 8) {
+                t.push_back('0');
+            }
+
             while (!t.empty()) {
                 bytes.push_back(t.back());
                 t.pop_back();
             }
         }
 
-        creatorMatrix creator;
-        creator.createMatrix(bytes, dc[0].get_tree_list(), ac[0].get_tree_list());
+        //create matrix Y
+        for (int i = 0; i < 4; i++) {
+            creatorMatrix creator_y;
+            int id_dc_y = _soss[0].get_id_dc(0);
+            int id_ac_y = _soss[0].get_id_ac(0);
+            creator_y.createMatrix(bytes, dc[id_dc_y].get_tree_list(), ac[id_ac_y].get_tree_list());
 
-        cout << "dc:\n";
-        for (auto &it : dc[0].get_tree_list()) {
-            cout << it.first << " " << it.second << "\n";
-        }
-        cout << "\n";
-
-        creator.print_matrix();
-
-        for (int i = 0; i < dc.size(); i++) {
-            for (int j = 0; j < ac.size(); j++) {
-
+            creator_y.print_matrix();
+            cout << "\n";
+            reverse(bytes.begin(), bytes.end());
+            for (int z = 0; z <= creator_y.get_last_use_byte(); z++) {
+                bytes.pop_back();
             }
+            reverse(bytes.begin(), bytes.end());
         }
+
+        //create matrix Cb
+        creatorMatrix creator_Cb;
+        int id_dc_cb = _soss[0].get_id_dc(1);
+        int id_ac_cb = _soss[0].get_id_ac(1);
+        creator_Cb.createMatrix(bytes, dc[id_dc_cb].get_tree_list(), ac[id_ac_cb].get_tree_list());
+
+        creator_Cb.print_matrix();
+        cout << "\n";
+        reverse(bytes.begin(), bytes.end());
+        for (int z = 0; z <= creator_Cb.get_last_use_byte(); z++) {
+            bytes.pop_back();
+        }
+        reverse(bytes.begin(), bytes.end());
+
+        //create matrix Cr
+        creatorMatrix creator_Cr;
+        int id_dc_cr = _soss[0].get_id_dc(2);
+        int id_ac_cr = _soss[0].get_id_ac(2);
+        creator_Cr.createMatrix(bytes, dc[id_dc_cr].get_tree_list(), ac[id_ac_cr].get_tree_list());
+
+        creator_Cr.print_matrix();
+        cout << "\n";
+        reverse(bytes.begin(), bytes.end());
+        for (int z = 0; z <= creator_Cr.get_last_use_byte(); z++) {
+            bytes.pop_back();
+        }
+        reverse(bytes.begin(), bytes.end());
     }
 
     int get_size_table_quants() const {
@@ -734,7 +795,7 @@ public:
     }
 
     bool get_is_open() const {
-        return _is_open;
+        return is_open_;
     }
 
     sof0 get_sof0(int ind) const {
@@ -760,5 +821,5 @@ private:
     vector<sos> _soss;
 
     vector<int> end_symbols_;
-    bool _is_open;
+    bool is_open_;
 };
