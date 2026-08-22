@@ -210,6 +210,7 @@ public:
 
         if (length_ < 8) {
             flag_use_bytes_ = false;
+            create_sof0_correct_ = false;
             return;
         }
 
@@ -221,6 +222,7 @@ public:
 
         if (3 * cnt_channels_ + 8 != length_) {
             flag_use_bytes_ = false;
+            create_sof0_correct_ = false;
             return;
         }
 
@@ -231,12 +233,30 @@ public:
                 section.get_buffer_el(i + 1) % 16, section.get_buffer_el(i + 2)
             };
         }
+
+        sort(channels_.begin(), channels_.end(), sort_channel);
+
+        if (channels_.size() != 3) {
+            create_sof0_correct_ = false;
+            return;
+        }
+
+        for (int i = 0; i < 3; i++) {
+            if (channels_[i].id != i + 1) {
+                create_sof0_correct_ = false;
+                return;
+            }
+        }
     }
 
     sof0(int length, int precision, int heigth, int width, int cnt_channels,
          vector<channel> channels) : length_(length), precision_(precision), heigth_(heigth), width_(width),
                                      cnt_channels_(cnt_channels),
                                      channels_(channels) {
+    }
+
+    static bool sort_channel(const channel &l, const channel &r) {
+        return l.id < r.id;
     }
 
 private:
@@ -248,6 +268,7 @@ private:
     vector<channel> channels_;
 
     bool flag_use_bytes_;
+    bool create_sof0_correct_;
 };
 
 struct tree {
@@ -787,6 +808,14 @@ public:
         creator_matrix_Cr_ = creator_Cr;
     }
 
+    void calculationsMatrix() {
+        for(int i = 0; i < 8; i++) {
+            for (int j = 0; j < 8; j++) {
+                
+            }
+        }
+    }
+
     int get_size_table_quants() const {
         return _table_quants.size();
     }
@@ -829,6 +858,14 @@ public:
 
     creatorMatrix get_creator_matrix_y(int ind) const {
         return creator_matrix_y_[ind];
+    }
+
+    creatorMatrix get_creator_matrix_Cb() const {
+        return creator_matrix_Cb_;
+    }
+
+    creatorMatrix get_creator_matrix_Cr() const {
+        return creator_matrix_Cr_;
     }
 
 private:

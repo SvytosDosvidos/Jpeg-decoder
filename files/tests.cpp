@@ -177,4 +177,31 @@ TEST_CASE("test_jpg.jpg") {
     for (int i = 0; i < 4; i++) {
         CHECK(jpg_decoder.get_creator_matrix_y(i) == creator_matrix_y[i]);
     }
+
+    //Create matrix Cb and Cr
+    vector<vector<int>> matrix_Cb = {
+        {-1, 0, 0, 0, 0, 0, 0, 0},
+        {1, 1, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0}
+    };
+    creatorMatrix creator_matrix_Cb(8, true, true, matrix_Cb);
+    CHECK(creator_matrix_Cb == jpg_decoder.get_creator_matrix_Cb());
+
+    vector<vector<int>> matrix_Cr = {
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {1, -1, 0, 0, 0, 0, 0, 0},
+        {1, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0}
+    };
+    creatorMatrix creator_matrix_Cr(12, true, true, matrix_Cr);
+    CHECK(creator_matrix_Cr == jpg_decoder.get_creator_matrix_Cr());
 }
