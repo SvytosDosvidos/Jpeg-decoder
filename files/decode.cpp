@@ -627,7 +627,7 @@ public:
         }
     }
 
-    void print_matrix() {
+    void print_matrix() const {
         for (int i = 0; i < matrix_.size(); i++) {
             for (int j = 0; j < matrix_[i].size(); j++) {
                 cout << matrix_[i][j] << " ";
@@ -638,7 +638,7 @@ public:
         cout << last_use_byte_ << "\n";
     }
 
-    void print_matrix_quant() {
+    void print_matrix_quant() const {
         for (int i = 0; i < matrix_quant_.size(); i++) {
             for (int j = 0; j < matrix_quant_[i].size(); j++) {
                 cout << matrix_quant_[i][j] << " ";
@@ -672,20 +672,24 @@ public:
         matrix_quant_[ind_i][ind_j] = el;
     }
 
-    int get_el_matrix_quant(int ind_i, int ind_j) {
+    int get_el_matrix_quant(int ind_i, int ind_j) const {
         return matrix_quant_[ind_i][ind_j];
     }
 
-    void set_el_matrix_reverse_cos_(int ind_i, int ind_j, int el) {
+    void set_el_matrix_reverse_cos(int ind_i, int ind_j, int el) {
         matrix_reverse_cos_[ind_i][ind_j] = el;
     }
 
-    int get_el_matrix_reverse_cos_(int ind_i, int ind_j) {
+    int get_el_matrix_reverse_cos(int ind_i, int ind_j) const {
         return matrix_reverse_cos_[ind_i][ind_j];
     }
 
-    void set_el_matrix_final_(int ind_i, int ind_j, int el) {
+    void set_el_matrix_final(int ind_i, int ind_j, int el) {
         matrix_final_[ind_i][ind_j] = el;
+    }
+
+    int get_el_matrix_final(int ind_i, int ind_j) const {
+        return matrix_final_[ind_i][ind_j];
     }
 private:
     int last_use_byte_;
@@ -696,6 +700,103 @@ private:
     vector<vector<int>> matrix_quant_;
     vector<vector<int>> matrix_reverse_cos_;
     vector<vector<int>> matrix_final_;
+};
+
+class Image {
+public:
+    struct pixel {
+        int R;
+        int G;
+        int B;
+    };
+
+    Image() {
+        RGB_.resize(16);
+        for (int i = 0; i < 16; i++) {
+            RGB_[i].resize(16);
+        }
+    };
+
+    pixel YCbCrToRGB(double Y, double Cb, double Cr) {
+        pixel pix;
+
+        pix.R = round(Y + 1.402 * (Cr - 128));
+        pix.G = round(Y - 0.34414 * (Cb-128) - 0.71414 * (Cr-128));
+        pix.B = round(Y + 1.772  * (Cb-128));
+
+        pix.R = min(max(0, pix.R), 255);
+        pix.G = min(max(0, pix.G), 255);
+        pix.B = min(max(0, pix.B), 255);
+
+        return pix;
+    }
+
+    void YCbCrToRGB(vector<creatorMatrix> &Y, creatorMatrix &Cb, creatorMatrix &Cr) {
+        for (int y = 0; y < 16; y++) {
+            for (int x = 0; x < 16; x++) {
+                int Y_num = get_y_num(Y, y, x);
+                int Cb_num = Cb.get_el_matrix_final(y/2,x/2);
+                int Cr_num = Cr.get_el_matrix_final(y/2,x/2);
+
+                RGB_[y][x] = YCbCrToRGB(Y_num, Cb_num, Cr_num);
+            }
+        }
+    }
+
+    void print_image() {
+        cout << "R:\n";
+        for (int i = 0; i < 8; i++) {
+            for (int j = 0; j < 8; j++) {
+                cout << RGB_[i][j].R << " ";
+            }
+            cout << "\n";
+        }
+        cout << "\n";
+
+        cout << "G:\n";
+        for (int i = 0; i < 8; i++) {
+            for (int j = 0; j < 8; j++) {
+                cout << RGB_[i][j].G << " ";
+            }
+            cout << "\n";
+        }
+        cout << "\n";
+
+        cout << "B:\n";
+        for (int i = 0; i < 8; i++) {
+            for (int j = 0; j < 8; j++) {
+                cout << RGB_[i][j].B << " ";
+            }
+            cout << "\n";
+        }
+        cout << "\n";
+    }
+
+    int get_y_num(vector<creatorMatrix> Y, int ind_i, int ind_j) {
+        if (ind_i <= 7 && ind_j <= 7) {
+            return Y[0].get_el_matrix_final(ind_i, ind_j);
+        } else if (ind_i <= 7 &&  ind_j >= 8) {
+            return Y[1].get_el_matrix_final(ind_i, ind_j - 8);
+        } else if (ind_i >= 8 && ind_j <= 7) {
+            return Y[2].get_el_matrix_final(ind_i - 8, ind_j);
+        } else if (ind_i >= 8 && ind_j >= 8) {
+            return Y[3].get_el_matrix_final(ind_i - 8, ind_j - 8);
+        }
+    }
+
+    int get_el_matrix_r(int ind_i, int ind_j) const {
+        return RGB_[ind_i][ind_j].R;
+    }
+
+    int get_el_matrix_g(int ind_i, int ind_j) const {
+        return RGB_[ind_i][ind_j].G;
+    }
+
+    int get_el_matrix_b(int ind_i, int ind_j) const {
+        return RGB_[ind_i][ind_j].B;
+    }
+private:
+    vector<vector<pixel>> RGB_;
 };
 
 class decoder {
@@ -865,6 +966,23 @@ public:
         creator_matrix_Cr_ = creator_Cr;
 
         calculations_quant();
+        calculations_reverse_cos();
+        calculations_final();
+
+        Image image;
+        image.YCbCrToRGB(creator_matrix_y_, creator_matrix_Cb_, creator_matrix_Cr_);
+        //image.print_image();
+
+        image_ = image;
+    }
+
+    void calculations_quant() {
+        for (int i = 0; i < 4; i++) {
+            calculations_quant(creator_matrix_y_[i], 0);
+        }
+
+        calculations_quant(creator_matrix_Cb_, 1);
+        calculations_quant(creator_matrix_Cr_, 2);
     }
 
     void calculations_quant(creatorMatrix &creator, int id_channel) {
@@ -877,17 +995,6 @@ public:
         }
     }
 
-    void calculations_quant() {
-        for (int i = 0; i < 4; i++) {
-            calculations_quant(creator_matrix_y_[i], 0);
-        }
-
-        calculations_quant(creator_matrix_Cb_, 1);
-        calculations_quant(creator_matrix_Cr_, 2);
-
-        calculations_reverse_cos();
-    }
-
     void calculations_reverse_cos() {
         for (int i = 0; i < 4; i++) {
             calculations_reverse_cos(creator_matrix_y_[i]);
@@ -897,7 +1004,7 @@ public:
         calculations_reverse_cos(creator_matrix_Cr_);
     }
 
-    double find_k_c(int id) {
+    double find_k_c(int id) const {
         if (id == 0) {
             return 1/sqrt(2);
         }
@@ -919,19 +1026,26 @@ public:
                         new_el += this_el;
                     }
                 }
-                creator.set_el_matrix_reverse_cos_(y, x, new_el);
+                creator.set_el_matrix_reverse_cos(y, x, round(new_el));
             }
         }
+    }
 
-        calculations_final(creator);
+    void calculations_final() {
+        for (int i = 0; i < 4; i++) {
+            calculations_final(creator_matrix_y_[i]);
+        }
+
+        calculations_final(creator_matrix_Cb_);
+        calculations_final(creator_matrix_Cr_);
     }
 
     void calculations_final(creatorMatrix &creator) {
         for (int i = 0; i < 8; i++) {
             for (int j = 0; j < 8; j++) {
-                int new_el = creator.get_el_matrix_reverse_cos_(i, j);
+                int new_el = creator.get_el_matrix_reverse_cos(i, j);
                 new_el = min(max(0, new_el + 128), 255);
-                creator.set_el_matrix_final_(i, j, new_el);
+                creator.set_el_matrix_final(i, j, new_el);
             }
         }
     }
@@ -988,6 +1102,9 @@ public:
         return creator_matrix_Cr_;
     }
 
+    Image get_image() const {
+        return image_;
+    }
 private:
     vector<table_quant> _table_quants;
     vector<sof0> _sof0s;
@@ -1002,4 +1119,6 @@ private:
     vector<creatorMatrix> creator_matrix_y_;
     creatorMatrix creator_matrix_Cb_;
     creatorMatrix creator_matrix_Cr_;
+
+    Image image_;
 };
