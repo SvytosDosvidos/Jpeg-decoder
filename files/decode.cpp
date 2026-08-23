@@ -5,6 +5,8 @@
 #include<math.h>
 #include<algorithm>
 #include<fstream>
+#include<numbers>
+#include<cmath>
 #include<unordered_map>
 
 #include "../cmake-build-debug/_deps/catch2-src/src/catch2/generators/catch_generators.hpp"
@@ -515,9 +517,13 @@ public:
     creatorMatrix() {
         matrix_.resize(8);
         matrix_quant_.resize(8);
+        matrix_reverse_cos_.resize(8);
+        matrix_final_.resize(8);
         for (int i = 0; i < 8; i++) {
             matrix_[i].resize(8);
             matrix_quant_[i].resize(8);
+            matrix_reverse_cos_[i].resize(8);
+            matrix_final_[i].resize(8);
         }
     }
 
@@ -526,12 +532,14 @@ public:
         && create_matrix_ == other.create_matrix_
         && find_dc_ == other.find_dc_
         && matrix_ == other.matrix_
-        && matrix_quant_ == other.matrix_quant_;
+        && matrix_quant_ == other.matrix_quant_
+        && matrix_reverse_cos_ == other.matrix_reverse_cos_;
     }
 
     creatorMatrix(int last_use_byte, bool create_matrix, bool find_dc, vector<vector<int>> matrix,
-        vector<vector<int>> matrix_quant) : last_use_byte_(last_use_byte), create_matrix_(create_matrix),
-        find_dc_(find_dc), matrix_(matrix), matrix_quant_(matrix_quant) {}
+        vector<vector<int>> matrix_quant, vector<vector<int>> matrix_reverse_cos) : last_use_byte_(last_use_byte),
+        create_matrix_(create_matrix), find_dc_(find_dc), matrix_(matrix), matrix_quant_(matrix_quant),
+        matrix_reverse_cos_(matrix_reverse_cos) {}
 
     void createMatrix(vector<char> &symbols, map<std::string, int> tree_list_dc, map<std::string, int> tree_list_ac) {
         find_dc_ = false;
@@ -639,6 +647,15 @@ public:
         }
     }
 
+    void print_matrix_reverse_cos_() {
+        for (int i = 0; i < matrix_reverse_cos_.size(); i++) {
+            for (int j = 0; j < matrix_reverse_cos_[i].size(); j++) {
+                cout << matrix_reverse_cos_[i][j] << " ";
+            }
+            cout << "\n";
+        }
+    }
+
     int get_last_use_byte() const {
         return last_use_byte_;
     }
@@ -655,6 +672,21 @@ public:
         matrix_quant_[ind_i][ind_j] = el;
     }
 
+    int get_el_matrix_quant(int ind_i, int ind_j) {
+        return matrix_quant_[ind_i][ind_j];
+    }
+
+    void set_el_matrix_reverse_cos_(int ind_i, int ind_j, int el) {
+        matrix_reverse_cos_[ind_i][ind_j] = el;
+    }
+
+    int get_el_matrix_reverse_cos_(int ind_i, int ind_j) {
+        return matrix_reverse_cos_[ind_i][ind_j];
+    }
+
+    void set_el_matrix_final_(int ind_i, int ind_j, int el) {
+        matrix_final_[ind_i][ind_j] = el;
+    }
 private:
     int last_use_byte_;
 
@@ -662,6 +694,8 @@ private:
     bool find_dc_;
     vector<vector<int>> matrix_;
     vector<vector<int>> matrix_quant_;
+    vector<vector<int>> matrix_reverse_cos_;
+    vector<vector<int>> matrix_final_;
 };
 
 class decoder {
@@ -830,10 +864,10 @@ public:
 
         creator_matrix_Cr_ = creator_Cr;
 
-        calculationsMatrix();
+        calculations_quant();
     }
 
-    void calculationsMatrix(creatorMatrix &creator, int id_channel) {
+    void calculations_quant(creatorMatrix &creator, int id_channel) {
         for(int i = 0; i < 8; i++) {
             for (int j = 0; j < 8; j++) {
                 int id_channel_quant = _sof0s[0].get_id_quant(id_channel);
@@ -843,13 +877,63 @@ public:
         }
     }
 
-    void calculationsMatrix() {
+    void calculations_quant() {
         for (int i = 0; i < 4; i++) {
-            calculationsMatrix(creator_matrix_y_[i], 0);
+            calculations_quant(creator_matrix_y_[i], 0);
         }
 
-        calculationsMatrix(creator_matrix_Cb_, 1);
-        calculationsMatrix(creator_matrix_Cr_, 2);
+        calculations_quant(creator_matrix_Cb_, 1);
+        calculations_quant(creator_matrix_Cr_, 2);
+
+        calculations_reverse_cos();
+    }
+
+    void calculations_reverse_cos() {
+        for (int i = 0; i < 4; i++) {
+            calculations_reverse_cos(creator_matrix_y_[i]);
+        }
+
+        calculations_reverse_cos(creator_matrix_Cb_);
+        calculations_reverse_cos(creator_matrix_Cr_);
+    }
+
+    double find_k_c(int id) {
+        if (id == 0) {
+            return 1/sqrt(2);
+        }
+        return 1;
+    }
+
+    void calculations_reverse_cos(creatorMatrix &creator) {
+        //x, u - column, y, v - line
+        for(int y = 0; y < 8; y++) {
+            for (int x = 0; x < 8; x++) {
+                double new_el = 0;
+                for (int u = 0; u < 8; u++) {
+                    for (int v = 0; v < 8; v++) {
+                        double pi = 3.14159265358979323846;
+                        double arg_cos_1 = (2 * x + 1) * u * pi /16.0;
+                        double arg_cos_2 = (2 * y + 1) * v * pi /16.0;
+                        double this_el = 1/4.0 * find_k_c(u) * find_k_c(v) * cos(arg_cos_1) * cos(arg_cos_2);
+                        this_el *= creator.get_el_matrix_quant(v, u);
+                        new_el += this_el;
+                    }
+                }
+                creator.set_el_matrix_reverse_cos_(y, x, new_el);
+            }
+        }
+
+        calculations_final(creator);
+    }
+
+    void calculations_final(creatorMatrix &creator) {
+        for (int i = 0; i < 8; i++) {
+            for (int j = 0; j < 8; j++) {
+                int new_el = creator.get_el_matrix_reverse_cos_(i, j);
+                new_el = min(max(0, new_el + 128), 255);
+                creator.set_el_matrix_final_(i, j, new_el);
+            }
+        }
     }
 
     int get_size_table_quants() const {

@@ -205,10 +205,54 @@ TEST_CASE("test_jpg.jpg") {
         {0, 0, 0, 0, 0, 0, 0, 0}
     };
 
-    creatorMatrix creator_matrix_y_1(32, true, true, matrix_y_1, matrix_y_quant_1);
-    creatorMatrix creator_matrix_y_2(19, true, true, matrix_y_2, matrix_y_quant_2);
-    creatorMatrix creator_matrix_y_3(26, true, true, matrix_y_3, matrix_y_quant_3);
-    creatorMatrix creator_matrix_y_4(27, true, true, matrix_y_4, matrix_y_quant_4);
+    vector<vector<int>> matrix_y_reverse_cos_1 = {
+        {138, 92, 27, -17, -17, 28, 93, 139},
+        {136, 82, 5, -51, -55, -8, 61, 111},
+        {143, 80, -9, -77, -89, -41, 32, 86},
+        {157, 95, 6, -62, -76, -33, 36, 86},
+        {147, 103, 37, -12, -21, 11, 62, 100},
+        {87, 72, 50, 36, 37, 55, 79, 95},
+        {-10, 5, 31, 56, 71, 73, 68, 62},
+        {-87, -50, 6, 56, 79, 72, 48, 29}
+    };
+
+    vector<vector<int>> matrix_y_reverse_cos_2 = {
+        {21, -34, -93, -105, -70, -26, -5, -5},
+        {33, -21, -81, -97, -68, -34, -22, -27},
+        {49, -4, -64, -83, -64, -44, -46, -60},
+        {54, 4, -49, -68, -56, -49, -66, -89},
+        {42, 0, -44, -56, -43, -43, -71, -102},
+        {13, -19, -49, -47, -28, -29, -61, -96},
+        {-20, -44, -59, -43, -15, -11, -44, -80},
+        {-42, -60, -67, -42, -6, 0, -32, -68}
+    };
+
+    vector<vector<int>> matrix_y_reverse_cos_3 = {
+        {-103, -77, -35, 12, 55, 85, 102, 109},
+        {-43, -25, 6, 41, 73, 96, 110, 116},
+        {31, 38, 50, 66, 81, 95, 105, 110},
+        {78, 72, 64, 59, 59, 66, 74, 80},
+        {94, 78, 53, 32, 23, 28, 41, 51},
+        {107, 83, 47, 18, 8, 18, 39, 55},
+        {133, 105, 64, 33, 26, 44, 75, 98},
+        {158, 129, 86, 55, 51, 76, 113, 140}
+    };
+
+    vector<vector<int>> matrix_y_reverse_cos_4 = {
+        {-30, -61, -86, -78, -50, -41, -65, -94},
+        {8, -28, -62, -63, -42, -36, -61, -90},
+        {66, 20, -27, -42, -31, -29, -53, -81},
+        {116, 61, -1, -29, -25, -22, -42, -66},
+        {137, 74, 1, -34, -29, -19, -28, -45},
+        {125, 59, -18, -55, -43, -20, -14, -21},
+        {97, 29, -49, -81, -60, -23, -3, -1},
+        {74, 6, -71, -100, -72, -25, 2, 10}
+    };
+
+    creatorMatrix creator_matrix_y_1(32, true, true, matrix_y_1, matrix_y_quant_1, matrix_y_reverse_cos_1);
+    creatorMatrix creator_matrix_y_2(19, true, true, matrix_y_2, matrix_y_quant_2, matrix_y_reverse_cos_2);
+    creatorMatrix creator_matrix_y_3(26, true, true, matrix_y_3, matrix_y_quant_3, matrix_y_reverse_cos_3);
+    creatorMatrix creator_matrix_y_4(27, true, true, matrix_y_4, matrix_y_quant_4, matrix_y_reverse_cos_4);
 
     vector<creatorMatrix> creator_matrix_y;
     creator_matrix_y.push_back(creator_matrix_y_1);
@@ -245,7 +289,18 @@ TEST_CASE("test_jpg.jpg") {
         {0, 0, 0, 0, 0, 0, 0, 0}
     };
 
-    creatorMatrix creator_matrix_Cb(8, true, true, matrix_Cb, matrix_Cb_quant);
+    vector<vector<int>> matrix_Cb_reverse_cos = {
+        {60, 52, 38, 20, 0, -18, -32, -40},
+        {48, 41, 29, 13, -3, -19, -31, -37},
+        {25, 20, 12, 2, -9, -19, -27, -32},
+        {-4, -6, -9, -13, -17, -20, -23, -25},
+        {-37, -35, -33, -29, -25, -21, -18, -17},
+        {-67, -63, -55, -44, -33, -22, -14, -10},
+        {-90, -84, -71, -56, -39, -23, -11, -4},
+        {-102, -95, -81, -62, -42, -23, -9, -1}
+    };
+
+    creatorMatrix creator_matrix_Cb(8, true, true, matrix_Cb, matrix_Cb_quant, matrix_Cb_reverse_cos);
     CHECK(creator_matrix_Cb == jpg_decoder.get_creator_matrix_Cb());
 
     vector<vector<int>> matrix_Cr = {
@@ -270,6 +325,17 @@ TEST_CASE("test_jpg.jpg") {
         {0, 0, 0, 0, 0, 0, 0, 0}
     };
 
-    creatorMatrix creator_matrix_Cr(12, true, true, matrix_Cr, matrix_Cr_quant);
+    vector<vector<int>> matrix_Cr_reverse_cos = {
+        {19, 27, 41, 60, 80, 99, 113, 120},
+        {0, 6, 18, 34, 51, 66, 78, 85},
+        {-27, -22, -14, -4, 7, 17, 25, 30},
+        {-43, -41, -38, -34, -30, -27, -24, -22},
+        {-35, -36, -39, -43, -47, -51, -53, -55},
+        {-5, -9, -17, -28, -39, -50, -58, -62},
+        {32, 26, 14, -1, -18, -34, -46, -53},
+        {58, 50, 36, 18, -2, -20, -34, -42}
+    };
+
+    creatorMatrix creator_matrix_Cr(12, true, true, matrix_Cr, matrix_Cr_quant, matrix_Cr_reverse_cos);
     CHECK(creator_matrix_Cr == jpg_decoder.get_creator_matrix_Cr());
 }
