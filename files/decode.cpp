@@ -99,8 +99,8 @@ const int MARKER = 0xff;
 
 class table_quant {
 public:
+    table_quant() = default;
     table_quant(const table_quant &) = default;
-
     table_quant(table_quant &&) = default;
 
     bool operator==(const table_quant &other) const {
@@ -176,7 +176,7 @@ private:
     int size_byte_;
     int ind_table_;
 
-    vector<vector<int> > matrix_;
+    vector<vector<int>> matrix_;
 
     bool flag_use_bytes_;
 };
@@ -257,6 +257,10 @@ public:
 
     static bool sort_channel(const channel &l, const channel &r) {
         return l.id < r.id;
+    }
+
+    int get_id_quant(int ind) const {
+        return channels_[ind].id_quant;
     }
 
 private:
@@ -510,8 +514,10 @@ class creatorMatrix {
 public:
     creatorMatrix() {
         matrix_.resize(8);
+        matrix_quant_.resize(8);
         for (int i = 0; i < 8; i++) {
             matrix_[i].resize(8);
+            matrix_quant_[i].resize(8);
         }
     }
 
@@ -519,11 +525,13 @@ public:
         return last_use_byte_ == other.last_use_byte_
         && create_matrix_ == other.create_matrix_
         && find_dc_ == other.find_dc_
-        && matrix_ == other.matrix_;
+        && matrix_ == other.matrix_
+        && matrix_quant_ == other.matrix_quant_;
     }
 
-    creatorMatrix(int last_use_byte, bool create_matrix, bool find_dc, vector<vector<int>> matrix) :
-        last_use_byte_(last_use_byte), create_matrix_(create_matrix), find_dc_(find_dc), matrix_(matrix) {}
+    creatorMatrix(int last_use_byte, bool create_matrix, bool find_dc, vector<vector<int>> matrix,
+        vector<vector<int>> matrix_quant) : last_use_byte_(last_use_byte), create_matrix_(create_matrix),
+        find_dc_(find_dc), matrix_(matrix), matrix_quant_(matrix_quant) {}
 
     void createMatrix(vector<char> &symbols, map<std::string, int> tree_list_dc, map<std::string, int> tree_list_ac) {
         find_dc_ = false;
@@ -622,6 +630,15 @@ public:
         cout << last_use_byte_ << "\n";
     }
 
+    void print_matrix_quant() {
+        for (int i = 0; i < matrix_quant_.size(); i++) {
+            for (int j = 0; j < matrix_quant_[i].size(); j++) {
+                cout << matrix_quant_[i][j] << " ";
+            }
+            cout << "\n";
+        }
+    }
+
     int get_last_use_byte() const {
         return last_use_byte_;
     }
@@ -634,12 +651,17 @@ public:
         matrix_[ind_i][ind_j] = el;
     }
 
+    void set_el_matrix_quant(int ind_i, int ind_j, int el) {
+        matrix_quant_[ind_i][ind_j] = el;
+    }
+
 private:
     int last_use_byte_;
 
     bool create_matrix_;
     bool find_dc_;
     vector<vector<int>> matrix_;
+    vector<vector<int>> matrix_quant_;
 };
 
 class decoder {
@@ -694,19 +716,20 @@ public:
                 i = indStart + this_section.get_length();
                 sections.push_back(this_section);
 
-                if (this_section.get_marker() == 0xDA) {
-                    findDA = true;
-                    sos new_sos(this_section);
-                    _soss.push_back(new_sos);
-                } else if (this_section.get_marker() == 0xDB) {
+                if (this_section.get_marker() == 0xDB) {
                     table_quant new_table_quant(this_section);
                     _table_quants.push_back(new_table_quant);
+                    map_table_quants_[new_table_quant.get_ind_table()] = new_table_quant;
                 } else if (this_section.get_marker() == 0xC0) {
                     sof0 new_sof0(this_section);
                     _sof0s.push_back(new_sof0);
                 } else if (this_section.get_marker() == 0xC4) {
                     dht new_dht(this_section);
                     _dhts.push_back(new_dht);
+                } else if (this_section.get_marker() == 0xDA) {
+                    findDA = true;
+                    sos new_sos(this_section);
+                    _soss.push_back(new_sos);
                 }
             } else if (findDA) {
                 end_symbols_.push_back(buffer[i]);
@@ -806,14 +829,27 @@ public:
         reverse(bytes.begin(), bytes.end());
 
         creator_matrix_Cr_ = creator_Cr;
+
+        calculationsMatrix();
+    }
+
+    void calculationsMatrix(creatorMatrix &creator, int id_channel) {
+        for(int i = 0; i < 8; i++) {
+            for (int j = 0; j < 8; j++) {
+                int id_channel_quant = _sof0s[0].get_id_quant(id_channel);
+                int new_el = creator.get_el_matrix(i, j) * map_table_quants_[id_channel_quant].get_el_matrix(i, j);
+                creator.set_el_matrix_quant(i, j, new_el);
+            }
+        }
     }
 
     void calculationsMatrix() {
-        for(int i = 0; i < 8; i++) {
-            for (int j = 0; j < 8; j++) {
-                
-            }
+        for (int i = 0; i < 4; i++) {
+            calculationsMatrix(creator_matrix_y_[i], 0);
         }
+
+        calculationsMatrix(creator_matrix_Cb_, 1);
+        calculationsMatrix(creator_matrix_Cr_, 2);
     }
 
     int get_size_table_quants() const {
@@ -873,6 +909,8 @@ private:
     vector<sof0> _sof0s;
     vector<dht> _dhts;
     vector<sos> _soss;
+
+    map<int, table_quant> map_table_quants_;
 
     vector<int> end_symbols_;
     bool is_open_;

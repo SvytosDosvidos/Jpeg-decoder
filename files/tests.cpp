@@ -161,10 +161,54 @@ TEST_CASE("test_jpg.jpg") {
         {0, 0, 0, 0, 0, 0, 0, 0}
     };
 
-    creatorMatrix creator_matrix_y_1(32, true, true, matrix_y_1);
-    creatorMatrix creator_matrix_y_2(19, true, true, matrix_y_2);
-    creatorMatrix creator_matrix_y_3(26, true, true, matrix_y_3);
-    creatorMatrix creator_matrix_y_4(27, true, true, matrix_y_4);
+    vector<vector<int>> matrix_y_quant_1 = {
+        {320, 0, 300, 0, 0, 0, 0, 0},
+        {0, 120, 280, 0, 0, 0, 0, 0},
+        {0, -130, -160, 0, 0, 0, 0, 0},
+        {140, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0}
+    };
+
+    vector<vector<int>> matrix_y_quant_2 = {
+        {-320, 110, 100, 160, 0, 0, 0, 0},
+        {0, 0, 140, 0, 0, 0, 0, 0},
+        {0, -130, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0}
+    };
+
+    vector<vector<int>> matrix_y_quant_3 = {
+        {480, -110, 100, 0, 0, 0, 0, 0},
+        {-120, -240, -140, 0, 0, 0, 0, 0},
+        {0, -130, 0, 0, 0, 0, 0, 0},
+        {-140, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0}
+    };
+
+    vector<vector<int>> matrix_y_quant_4 = {
+        {-160, 220, 200, 160, 0, 0, 0, 0},
+        {-120, 0, -140, 0, 0, 0, 0, 0},
+        {-140, -130, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0}
+    };
+
+    creatorMatrix creator_matrix_y_1(32, true, true, matrix_y_1, matrix_y_quant_1);
+    creatorMatrix creator_matrix_y_2(19, true, true, matrix_y_2, matrix_y_quant_2);
+    creatorMatrix creator_matrix_y_3(26, true, true, matrix_y_3, matrix_y_quant_3);
+    creatorMatrix creator_matrix_y_4(27, true, true, matrix_y_4, matrix_y_quant_4);
 
     vector<creatorMatrix> creator_matrix_y;
     creator_matrix_y.push_back(creator_matrix_y_1);
@@ -189,7 +233,19 @@ TEST_CASE("test_jpg.jpg") {
         {0, 0, 0, 0, 0, 0, 0, 0},
         {0, 0, 0, 0, 0, 0, 0, 0}
     };
-    creatorMatrix creator_matrix_Cb(8, true, true, matrix_Cb);
+
+    vector<vector<int>> matrix_Cb_quant = {
+        {-170, 0, 0, 0, 0, 0, 0, 0},
+        {180, 210, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0}
+    };
+
+    creatorMatrix creator_matrix_Cb(8, true, true, matrix_Cb, matrix_Cb_quant);
     CHECK(creator_matrix_Cb == jpg_decoder.get_creator_matrix_Cb());
 
     vector<vector<int>> matrix_Cr = {
@@ -202,6 +258,18 @@ TEST_CASE("test_jpg.jpg") {
         {0, 0, 0, 0, 0, 0, 0, 0},
         {0, 0, 0, 0, 0, 0, 0, 0}
     };
-    creatorMatrix creator_matrix_Cr(12, true, true, matrix_Cr);
+
+    vector<vector<int>> matrix_Cr_quant = {
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {180, -210, 0, 0, 0, 0, 0, 0},
+        {240, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0},
+        {0, 0, 0, 0, 0, 0, 0, 0}
+    };
+
+    creatorMatrix creator_matrix_Cr(12, true, true, matrix_Cr, matrix_Cr_quant);
     CHECK(creator_matrix_Cr == jpg_decoder.get_creator_matrix_Cr());
 }
