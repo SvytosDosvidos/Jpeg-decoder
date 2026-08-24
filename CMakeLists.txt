@@ -8,12 +8,16 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_executable(
         jpg_decoder
         files/main.cpp
-        files/decode.cpp
+        files/decoder.cpp
+        files/decoder.h
         files/section.cpp
         files/section.h
         files/filters.cpp
         files/filters.h
-        files/decode.h
+        files/image.cpp
+        files/image.h
+        files/creatorMatrix.cpp
+        files/creatorMatrix.h
 )
 
 include(FetchContent)
@@ -29,13 +33,17 @@ FetchContent_MakeAvailable(Catch2)
 
 add_executable(
         jpg_decoder_tests
-        files/decode.cpp
+        files/decoder.cpp
+        files/decoder.h
         files/section.cpp
         files/section.h
         files/filters.cpp
         files/filters.h
-        files/decode.h
-        files/tests.cpp
+        files/image.cpp
+        files/image.h
+        files/creatorMatrix.cpp
+        files/creatorMatrix.h
+        files/tests/tests.cpp
 )
 
 target_link_libraries(

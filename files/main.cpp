@@ -1,5 +1,5 @@
 #include <iostream>
-#include "decode.cpp"
+#include "decoder.cpp"
 
 using namespace std;
 

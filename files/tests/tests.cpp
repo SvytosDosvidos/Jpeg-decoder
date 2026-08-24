@@ -1,9 +1,9 @@
 #include <catch2/catch_test_macros.hpp>
 #include <filesystem>
 
-#include "decode.h"
-#include "filters.h"
-#include "section.h"
+#include "../decoder.h"
+#include "../filters.h"
+#include "../section.h"
 
 TEST_CASE("First test") {
     CHECK(2 + 2 == 4);
@@ -13,7 +13,7 @@ TEST_CASE("test_jpg.jpg") {
     decoder jpg_decoder;
 
     const std::filesystem::path path =
-        std::filesystem::path(TEST_DATA_DIR) / "test_jpg.jpg";
+        std::filesystem::path(TEST_DATA_DIR) / "tests/photos/test_jpg.jpg";
 
     REQUIRE(std::filesystem::exists(path));
 
