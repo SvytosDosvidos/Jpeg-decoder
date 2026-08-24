@@ -1,4 +1,4 @@
-# JPEG Decoder (C++17)
+# JPEG Decoder (C++20)
 
 Учебный пет-проект: реализация декодера JPEG (Baseline Sequential) на C++17 с нуля.
 
@@ -9,15 +9,6 @@
 - Валидация входных данных, обработка ошибок через исключения.
 
 ## Структура
-- `decoder.cpp/h` — основная логика декодирования.
-- `section.cpp/h` — контейнер секций JPEG-файла.
-- `filters.cpp/h` — парсеры DHT, DQT, SOF0, SOS.
-- `creatorMatrix.cpp/h` — сборка матриц коэффициентов из битового потока.
-- `image.cpp/h` — конвертация YCbCr → RGB.
-- `main.cpp` — CLI точка входа.
+
 
 ## Сборка и запуск
-```bash
-cmake -B build
-cmake --build build
-./build/jpg_decoder <image.jpg>
