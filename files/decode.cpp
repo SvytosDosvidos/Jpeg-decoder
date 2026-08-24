@@ -1,1124 +1,569 @@
-#include<iostream>
-#include<vector>
-#include<string>
-#include<map>
-#include<math.h>
-#include<algorithm>
-#include<fstream>
-#include<numbers>
-#include<cmath>
-#include<unordered_map>
-
-#include "../cmake-build-debug/_deps/catch2-src/src/catch2/generators/catch_generators.hpp"
+#include "decode.h"
 
 using namespace std;
 
-class Section {
-public:
-    Section(int marker, int get_cnt_byte_4_length) : marker_(marker),
-                                                     get_cnt_byte_4_length_(get_cnt_byte_4_length), length_(0),
-                                                     buffer_({}) {
-    }
-
-    Section() {
-    }
-
-    void add_buffer(int num) {
-        if (buffer_.capacity() != length_) {
-            buffer_.reserve(length_);
-        }
-        buffer_.push_back(num);
-    }
-
-    int get_marker() const {
-        return marker_;
-    }
-
-    int get_length() const {
-        return length_;
-    }
-
-    int get_cnt_byte_4_length() const {
-        return get_cnt_byte_4_length_;
-    }
-
-    int get_buffer_el(int l, int r) const {
-        long long el = 0;
-        for (int ind = l; ind <= r; ind++) {
-            el = 16 * el + buffer_[ind];
-        }
-        return el;
-    }
-
-    int get_buffer_el(int ind) const {
-        return buffer_[ind];
-    }
-
-    void add_length(int length) {
-        length_ = 16 * length_ + length;
-    }
-
-private:
-    int marker_;
-    int length_;
-    std::vector<int> buffer_;
-
-    int get_cnt_byte_4_length_;
-};
-
-bool go2granintsy(int ind_i) {
-    if (ind_i < 0 || ind_i >= 8) {
-        return true;
-    }
-    return false;
-}
-
-void next_inds(int &ind_i, int &ind_j, int &type) {
-    vector<pair<int, int> > directions = {{-1, 1}, {1, -1}};
-
-    if (go2granintsy(ind_i + directions[type].first) || go2granintsy(ind_j + directions[type].second)) {
-        if (type == 0) {
-            if (!go2granintsy(ind_j + 1)) {
-                ind_j++;
-            } else {
-                ind_i++;
-            }
-        } else {
-            if (!go2granintsy(ind_i + 1)) {
-                ind_i++;
-            } else {
-                ind_j++;
-            }
-        }
-        type = 1 - type;
-    } else {
-        ind_i += directions[type].first;
-        ind_j += directions[type].second;
-    }
-}
-
 const int MARKER = 0xff;
 
-class table_quant {
-public:
-    table_quant() = default;
-    table_quant(const table_quant &) = default;
-    table_quant(table_quant &&) = default;
-
-    bool operator==(const table_quant &other) const {
-        return length_ == other.length_
-               && size_byte_ == other.size_byte_
-               && ind_table_ == other.ind_table_
-               && matrix_ == other.matrix_;
+//creatorMatrix
+creatorMatrix::creatorMatrix() {
+    matrix_.resize(8);
+    matrix_quant_.resize(8);
+    matrix_reverse_cos_.resize(8);
+    matrix_final_.resize(8);
+    for (int i = 0; i < 8; i++) {
+        matrix_[i].resize(8);
+        matrix_quant_[i].resize(8);
+        matrix_reverse_cos_[i].resize(8);
+        matrix_final_[i].resize(8);
     }
+}
 
-    table_quant &operator=(const table_quant &) = default;
+bool creatorMatrix::operator==(const creatorMatrix &other) const {
+    return last_use_byte_ == other.last_use_byte_
+           && create_matrix_ == other.create_matrix_
+           && find_dc_ == other.find_dc_
+           && matrix_ == other.matrix_
+           && matrix_quant_ == other.matrix_quant_
+           && matrix_reverse_cos_ == other.matrix_reverse_cos_;
+}
 
-    table_quant &operator=(table_quant &&) = default;
+void creatorMatrix::createMatrix(vector<char> &symbols, map<std::string, int> tree_list_dc,
+                                 map<std::string, int> tree_list_ac) {
+    find_dc_ = false;
+    create_matrix_ = true;
+    string cur_str;
 
-    table_quant(Section &section) {
-        flag_use_bytes_ = true;
-        length_ = section.get_length();
+    int cur_i = 0, cur_j = 0, type = 0;
 
-        if (length_ != 67) {
-            flag_use_bytes_ = false;
-            return;
-        }
+    for (int i = 0; i < symbols.size(); i++) {
+        cur_str.push_back(symbols[i]);
+        if (!find_dc_) {
+            if (tree_list_dc.find(cur_str) != tree_list_dc.end()) {
+                int k_dc = 0;
 
-        size_byte_ = 1 + section.get_buffer_el(2) / 16;
-        ind_table_ = section.get_buffer_el(2) % 16;
-
-        create_matrix(section);
-    }
-
-    table_quant(int length, int size_byte, int ind_table, vector<vector<int> > &matrix) : length_(length),
-        size_byte_(size_byte), ind_table_(ind_table), matrix_(matrix) {
-    };
-
-    void create_matrix(Section &section) {
-        int ind_i = 0, ind_j = 0;
-        vector<pair<int, int> > directions = {{-1, 1}, {1, -1}};
-        int type = 0;
-        int ind = 0;
-        matrix_.resize(8);
-        for (int i = 0; i < 8; i++) {
-            matrix_[i].resize(8);
-        }
-
-        while (ind < 64) {
-            matrix_[ind_i][ind_j] = section.get_buffer_el(3 + ind);
-
-            next_inds(ind_i, ind_j, type);
-            ind++;
-        }
-    }
-
-    int get_length() const {
-        return length_;
-    }
-
-    int get_size_byte() const {
-        return size_byte_;
-    }
-
-    int get_ind_table() const {
-        return ind_table_;
-    }
-
-    int get_el_matrix(int i, int j) const {
-        return matrix_[i][j];
-    }
-
-    vector<vector<int> > get_matrix() const {
-        return matrix_;
-    }
-
-private:
-    int length_;
-    int size_byte_;
-    int ind_table_;
-
-    vector<vector<int>> matrix_;
-
-    bool flag_use_bytes_;
-};
-
-struct channel {
-    int id;
-    int h;
-    int w;
-    int id_quant;
-
-    bool operator==(const channel &other) const {
-        return id == other.id && h == other.h
-               && w == other.w && id_quant == other.id_quant;
-    }
-};
-
-class sof0 {
-public:
-    bool operator==(const sof0 &other) const {
-        return length_ == other.length_
-               && precision_ == other.precision_
-               && heigth_ == other.heigth_
-               && width_ == other.width_
-               && cnt_channels_ == other.cnt_channels_
-               && channels_ == other.channels_;
-    }
-
-    sof0(Section &section) {
-        flag_use_bytes_ = true;
-        length_ = section.get_length();
-
-        if (length_ < 8) {
-            flag_use_bytes_ = false;
-            create_sof0_correct_ = false;
-            return;
-        }
-
-        precision_ = section.get_buffer_el(2);
-        heigth_ = section.get_buffer_el(3, 4);
-        width_ = section.get_buffer_el(5, 6);
-        cnt_channels_ = section.get_buffer_el(7);
-        channels_.resize(cnt_channels_);
-
-        if (3 * cnt_channels_ + 8 != length_) {
-            flag_use_bytes_ = false;
-            create_sof0_correct_ = false;
-            return;
-        }
-
-        for (int i = 8; i < section.get_length(); i += 3) {
-            int ind = (i - 8) / 3;
-            channels_[ind] = {
-                section.get_buffer_el(i), section.get_buffer_el(i + 1) / 16,
-                section.get_buffer_el(i + 1) % 16, section.get_buffer_el(i + 2)
-            };
-        }
-
-        sort(channels_.begin(), channels_.end(), sort_channel);
-
-        if (channels_.size() != 3) {
-            create_sof0_correct_ = false;
-            return;
-        }
-
-        for (int i = 0; i < 3; i++) {
-            if (channels_[i].id != i + 1) {
-                create_sof0_correct_ = false;
-                return;
-            }
-        }
-    }
-
-    sof0(int length, int precision, int heigth, int width, int cnt_channels,
-         vector<channel> channels) : length_(length), precision_(precision), heigth_(heigth), width_(width),
-                                     cnt_channels_(cnt_channels),
-                                     channels_(channels) {
-    }
-
-    static bool sort_channel(const channel &l, const channel &r) {
-        return l.id < r.id;
-    }
-
-    int get_id_quant(int ind) const {
-        return channels_[ind].id_quant;
-    }
-
-private:
-    int length_;
-    int precision_;
-    int heigth_;
-    int width_;
-    int cnt_channels_;
-    vector<channel> channels_;
-
-    bool flag_use_bytes_;
-    bool create_sof0_correct_;
-};
-
-struct tree {
-    int num;
-
-    tree *l;
-    tree *r;
-};
-
-class dht {
-public:
-    dht(int length, int type_dht, int id, bool flag_create_tree,
-        map<string, int> tree_list) : length_(length),
-                                      type_dht_(type_dht), id_(id), flag_create_tree_(flag_create_tree),
-                                      tree_list_(tree_list) {
-    }
-
-    dht(Section &section) {
-        flag_use_bytes_ = true;
-        length_ = section.get_length();
-        sum_bytes_ = 0;
-
-        if (length_ < 19) {
-            flag_use_bytes_ = false;
-            return;
-        }
-
-        type_dht_ = section.get_buffer_el(2) / 16;
-        id_ = section.get_buffer_el(2) % 16;
-
-        codes_.resize(16);
-
-        for (int i = 3; i < 19; i++) {
-            sum_bytes_ += section.get_buffer_el(i);
-        }
-
-        if (3 + 16 + sum_bytes_ != length_) {
-            flag_use_bytes_ = false;
-            return;
-        }
-
-        int ind = 19;
-        for (int i = 0; i < 16; i++) {
-            codes_[i].resize(section.get_buffer_el(i + 3));
-            for (int j = 0; j < codes_[i].size(); j++) {
-                codes_[i][j] = section.get_buffer_el(j + ind);
-            }
-            ind += codes_[i].size();
-        }
-
-        flag_create_tree_ = true;
-        create_tree();
-    }
-
-    bool operator==(const dht &other) const {
-        return length_ == other.length_
-               && type_dht_ == other.type_dht_
-               && id_ == other.id_
-               && flag_create_tree_ == other.flag_create_tree_
-               && tree_list_ == other.tree_list_;
-    }
-
-    bool dfs(int cur_h, tree *cur, int h, int num, string &key) {
-        if (cur_h < h) {
-            if (!cur->l) {
-                cur->l = new tree({-1, nullptr, nullptr});
-            }
-
-            if (cur->l->num == -1) {
-                key += "0";
-                bool flag_l = dfs(cur_h + 1, cur->l, h, num, key);
-                if (flag_l) {
-                    return flag_l;
-                }
-                key.pop_back();
-            }
-
-            if (!cur->r) {
-                cur->r = new tree({-1, nullptr, nullptr});
-            }
-
-            if (cur->r->num == -1) {
-                key += "1";
-                bool flag_r = dfs(cur_h + 1, cur->r, h, num, key);
-                if (flag_r) {
-                    return flag_r;
-                }
-                key.pop_back();
-            }
-
-            return false;
-        } else {
-            if (cur->num == -1) {
-                cur->num = num;
-                return true;
-            }
-            return false;
-        }
-    }
-
-    void print_dfs() {
-        cout << "start_print\n";
-        print_dfs(start);
-    }
-
-    void print_dfs(tree *cur) {
-        if (!cur) {
-            cout << "\n";
-            return;
-        }
-        cout << cur->num << "\n";
-        cout << "l: ";
-        print_dfs(cur->l);
-        cout << "r: ";
-        print_dfs(cur->r);
-    }
-
-    void create_tree() {
-        start = new tree({-1, nullptr, nullptr});
-        for (int i = 0; i < 16; i++) {
-            for (int j = 0; j < codes_[i].size(); j++) {
-                string key = "";
-                flag_create_tree_ &= dfs(0, start, i + 1, codes_[i][j], key);
-                tree_list_[key] = codes_[i][j];
-                if (!flag_create_tree_) {
+                if (i + tree_list_dc[cur_str] > symbols.size()) {
+                    create_matrix_ = false;
+                    last_use_byte_ = i;
                     return;
                 }
-            }
-        }
 
-        cout << "\n";
-    }
-
-    int get_type_dht() const {
-        return type_dht_;
-    }
-
-    int get_id() const {
-        return id_;
-    }
-
-    map<std::string, int> get_tree_list() const {
-        return tree_list_;
-    }
-
-private:
-    int length_;
-    int type_dht_;
-    int id_;
-    vector<vector<int> > codes_;
-    tree *start;
-
-    bool flag_create_tree_;
-    map<std::string, int> tree_list_;
-
-    int sum_bytes_;
-    bool flag_use_bytes_;
-};
-
-struct channel_sos {
-    int id;
-    int id_DC;
-    int id_AC;
-
-    bool operator==(const channel_sos &other) const {
-        return id == other.id
-               && id_DC == other.id_DC
-               && id_AC == other.id_AC;
-    }
-};
-
-class sos {
-public:
-    sos(Section &section) {
-        flag_use_bytes_ = true;
-        length_ = section.get_length();
-
-        if (length_ < 3) {
-            flag_use_bytes_ = false;
-            return;
-        }
-
-        cnt_channels_ = section.get_buffer_el(2);
-
-        if (2 * cnt_channels_ + 3 + 3 != length_) {
-            flag_use_bytes_ = false;
-            return;
-        }
-
-        channels_.resize(cnt_channels_);
-        for (int i = 0; i < cnt_channels_; i++) {
-            channel_sos cur_channel;
-            cur_channel.id = section.get_buffer_el(2 * i + 3);
-            cur_channel.id_DC = section.get_buffer_el(2 * i + 4) / 16;
-            cur_channel.id_AC = section.get_buffer_el(2 * i + 4) % 16;
-            channels_[i] = cur_channel;
-        }
-
-        if (section.get_buffer_el(2 * cnt_channels_ + 3) != 0x00 &&
-            section.get_buffer_el(2 * cnt_channels_ + 4) != 0x3F &&
-            section.get_buffer_el(2 * cnt_channels_ + 5) != 0x00) {
-                flag_use_bytes_ = false;
-        }
-
-        sort(channels_.begin(), channels_.end(), comp);
-    }
-
-    sos(int length, int cnt_channel, vector<channel_sos> channels) : length_(length), cnt_channels_(cnt_channel),
-                                                                     channels_(channels) {
-    }
-
-    bool operator==(const sos &other) const {
-        return length_ == other.length_
-               && cnt_channels_ == other.cnt_channels_
-               && channels_ == other.channels_;
-    }
-
-    static bool comp(const channel_sos& l, const channel_sos& r) {
-        return l.id < r.id;
-    }
-
-    int get_id_dc(int id) const {
-        return channels_[id].id_DC;
-    }
-
-    int get_id_ac(int id) const {
-        return channels_[id].id_AC;
-    }
-
-private:
-    int length_;
-    int cnt_channels_;
-    vector<channel_sos> channels_;
-
-    bool flag_use_bytes_;
-};
-
-class creatorMatrix {
-public:
-    creatorMatrix() {
-        matrix_.resize(8);
-        matrix_quant_.resize(8);
-        matrix_reverse_cos_.resize(8);
-        matrix_final_.resize(8);
-        for (int i = 0; i < 8; i++) {
-            matrix_[i].resize(8);
-            matrix_quant_[i].resize(8);
-            matrix_reverse_cos_[i].resize(8);
-            matrix_final_[i].resize(8);
-        }
-    }
-
-    bool operator== (const creatorMatrix &other) const {
-        return last_use_byte_ == other.last_use_byte_
-        && create_matrix_ == other.create_matrix_
-        && find_dc_ == other.find_dc_
-        && matrix_ == other.matrix_
-        && matrix_quant_ == other.matrix_quant_
-        && matrix_reverse_cos_ == other.matrix_reverse_cos_;
-    }
-
-    creatorMatrix(int last_use_byte, bool create_matrix, bool find_dc, vector<vector<int>> matrix,
-        vector<vector<int>> matrix_quant, vector<vector<int>> matrix_reverse_cos) : last_use_byte_(last_use_byte),
-        create_matrix_(create_matrix), find_dc_(find_dc), matrix_(matrix), matrix_quant_(matrix_quant),
-        matrix_reverse_cos_(matrix_reverse_cos) {}
-
-    void createMatrix(vector<char> &symbols, map<std::string, int> tree_list_dc, map<std::string, int> tree_list_ac) {
-        find_dc_ = false;
-        create_matrix_ = true;
-        string cur_str;
-
-        int cur_i = 0, cur_j = 0, type = 0;
-
-        for (int i = 0; i < symbols.size(); i++) {
-            cur_str.push_back(symbols[i]);
-            if (!find_dc_) {
-                if (tree_list_dc.find(cur_str) != tree_list_dc.end()) {
-                    int k_dc = 0;
-
-                    if (i + tree_list_dc[cur_str] > symbols.size()) {
-                        create_matrix_ = false;
-                        last_use_byte_ = i;
-                        return;
-                    }
-
-                    for (int j = i + 1; j <= i + tree_list_dc[cur_str]; j++) {
-                        k_dc *= 2;
-                        k_dc += symbols[j] - '0';
-                    }
-
-                    if (symbols[i + 1] == '0') {
-                        k_dc = k_dc - pow(2, tree_list_dc[cur_str]) + 1;
-                    }
-
-                    matrix_[cur_i][cur_j] = k_dc;
-
-                    next_inds(cur_i, cur_j, type);
-
-                    i += tree_list_dc[cur_str];
-                    cur_str.clear();
-
-                    find_dc_ = true;
+                for (int j = i + 1; j <= i + tree_list_dc[cur_str]; j++) {
+                    k_dc *= 2;
+                    k_dc += symbols[j] - '0';
                 }
-            } else {
-                if (tree_list_ac.find(cur_str) != tree_list_ac.end()) {
-                    if (tree_list_ac[cur_str] == 0) {
-                        last_use_byte_ = i;
-                        return;
-                    }
-                    int k_ac_1 = tree_list_ac[cur_str] / 16, k_ac_2 = tree_list_ac[cur_str] % 16;
 
-                    while (k_ac_1--) {
-                        matrix_[cur_i][cur_j] = 0;
-                        if (cur_i == 7 && cur_j == 7) {
-                            last_use_byte_ = i;
-                            return;
-                        }
+                if (symbols[i + 1] == '0') {
+                    k_dc = k_dc - pow(2, tree_list_dc[cur_str]) + 1;
+                }
 
-                        next_inds(cur_i, cur_j, type);
-                    }
+                matrix_[cur_i][cur_j] = k_dc;
 
-                    int k_ac = 0;
+                next_inds(cur_i, cur_j, type);
 
-                    if (i + k_ac_2 > symbols.size()) {
-                        last_use_byte_ = i;
-                        create_matrix_ = false;
-                        return;
-                    }
+                i += tree_list_dc[cur_str];
+                cur_str.clear();
 
-                    for (int j = i + 1; j <= i + k_ac_2; j++) {
-                        k_ac *= 2;
-                        k_ac += symbols[j] - '0';
-                    }
+                find_dc_ = true;
+            }
+        } else {
+            if (tree_list_ac.find(cur_str) != tree_list_ac.end()) {
+                if (tree_list_ac[cur_str] == 0) {
+                    last_use_byte_ = i;
+                    return;
+                }
+                int k_ac_1 = tree_list_ac[cur_str] / 16, k_ac_2 = tree_list_ac[cur_str] % 16;
 
-                    if (symbols[i + 1] == '0') {
-                        k_ac = k_ac - pow(2, k_ac_2) + 1;
-                    }
-
-                    matrix_[cur_i][cur_j] = k_ac;
+                while (k_ac_1--) {
+                    matrix_[cur_i][cur_j] = 0;
                     if (cur_i == 7 && cur_j == 7) {
                         last_use_byte_ = i;
                         return;
                     }
 
                     next_inds(cur_i, cur_j, type);
-                    i += k_ac_2;
-                    cur_str.clear();
                 }
+
+                int k_ac = 0;
+
+                if (i + k_ac_2 > symbols.size()) {
+                    last_use_byte_ = i;
+                    create_matrix_ = false;
+                    return;
+                }
+
+                for (int j = i + 1; j <= i + k_ac_2; j++) {
+                    k_ac *= 2;
+                    k_ac += symbols[j] - '0';
+                }
+
+                if (symbols[i + 1] == '0') {
+                    k_ac = k_ac - pow(2, k_ac_2) + 1;
+                }
+
+                matrix_[cur_i][cur_j] = k_ac;
+                if (cur_i == 7 && cur_j == 7) {
+                    last_use_byte_ = i;
+                    return;
+                }
+
+                next_inds(cur_i, cur_j, type);
+                i += k_ac_2;
+                cur_str.clear();
             }
         }
     }
+}
 
-    void print_matrix() const {
-        for (int i = 0; i < matrix_.size(); i++) {
-            for (int j = 0; j < matrix_[i].size(); j++) {
-                cout << matrix_[i][j] << " ";
-            }
-            cout << "\n";
+void creatorMatrix::print_matrix() const {
+    for (int i = 0; i < matrix_.size(); i++) {
+        for (int j = 0; j < matrix_[i].size(); j++) {
+            cout << matrix_[i][j] << " ";
         }
-
-        cout << last_use_byte_ << "\n";
+        cout << "\n";
     }
 
-    void print_matrix_quant() const {
-        for (int i = 0; i < matrix_quant_.size(); i++) {
-            for (int j = 0; j < matrix_quant_[i].size(); j++) {
-                cout << matrix_quant_[i][j] << " ";
-            }
-            cout << "\n";
+    cout << last_use_byte_ << "\n";
+}
+
+void creatorMatrix::print_matrix_quant() const {
+    for (int i = 0; i < matrix_quant_.size(); i++) {
+        for (int j = 0; j < matrix_quant_[i].size(); j++) {
+            cout << matrix_quant_[i][j] << " ";
         }
+        cout << "\n";
     }
+}
 
-    void print_matrix_reverse_cos_() {
-        for (int i = 0; i < matrix_reverse_cos_.size(); i++) {
-            for (int j = 0; j < matrix_reverse_cos_[i].size(); j++) {
-                cout << matrix_reverse_cos_[i][j] << " ";
-            }
-            cout << "\n";
+void creatorMatrix::print_matrix_reverse_cos_() const {
+    for (int i = 0; i < matrix_reverse_cos_.size(); i++) {
+        for (int j = 0; j < matrix_reverse_cos_[i].size(); j++) {
+            cout << matrix_reverse_cos_[i][j] << " ";
         }
+        cout << "\n";
     }
+}
 
-    int get_last_use_byte() const {
-        return last_use_byte_;
+int creatorMatrix::get_last_use_byte() const {
+    return last_use_byte_;
+}
+
+int creatorMatrix::get_el_matrix(int ind_i, int ind_j) const {
+    return matrix_[ind_i][ind_j];
+}
+
+void creatorMatrix::set_el_matrix(int ind_i, int ind_j, int el) {
+    matrix_[ind_i][ind_j] = el;
+}
+
+void creatorMatrix::set_el_matrix_quant(int ind_i, int ind_j, int el) {
+    matrix_quant_[ind_i][ind_j] = el;
+}
+
+int creatorMatrix::get_el_matrix_quant(int ind_i, int ind_j) const {
+    return matrix_quant_[ind_i][ind_j];
+}
+
+void creatorMatrix::set_el_matrix_reverse_cos(int ind_i, int ind_j, int el) {
+    matrix_reverse_cos_[ind_i][ind_j] = el;
+}
+
+int creatorMatrix::get_el_matrix_reverse_cos(int ind_i, int ind_j) const {
+    return matrix_reverse_cos_[ind_i][ind_j];
+}
+
+void creatorMatrix::set_el_matrix_final(int ind_i, int ind_j, int el) {
+    matrix_final_[ind_i][ind_j] = el;
+}
+
+int creatorMatrix::get_el_matrix_final(int ind_i, int ind_j) const {
+    return matrix_final_[ind_i][ind_j];
+}
+
+//Image
+Image::Image() {
+    RGB_.resize(16);
+    for (int i = 0; i < 16; i++) {
+        RGB_[i].resize(16);
     }
-
-    int get_el_matrix(int ind_i, int ind_j) const {
-        return matrix_[ind_i][ind_j];
-    }
-
-    void set_el_matrix(int ind_i, int ind_j, int el) {
-        matrix_[ind_i][ind_j] = el;
-    }
-
-    void set_el_matrix_quant(int ind_i, int ind_j, int el) {
-        matrix_quant_[ind_i][ind_j] = el;
-    }
-
-    int get_el_matrix_quant(int ind_i, int ind_j) const {
-        return matrix_quant_[ind_i][ind_j];
-    }
-
-    void set_el_matrix_reverse_cos(int ind_i, int ind_j, int el) {
-        matrix_reverse_cos_[ind_i][ind_j] = el;
-    }
-
-    int get_el_matrix_reverse_cos(int ind_i, int ind_j) const {
-        return matrix_reverse_cos_[ind_i][ind_j];
-    }
-
-    void set_el_matrix_final(int ind_i, int ind_j, int el) {
-        matrix_final_[ind_i][ind_j] = el;
-    }
-
-    int get_el_matrix_final(int ind_i, int ind_j) const {
-        return matrix_final_[ind_i][ind_j];
-    }
-private:
-    int last_use_byte_;
-
-    bool create_matrix_;
-    bool find_dc_;
-    vector<vector<int>> matrix_;
-    vector<vector<int>> matrix_quant_;
-    vector<vector<int>> matrix_reverse_cos_;
-    vector<vector<int>> matrix_final_;
 };
 
-class Image {
-public:
-    struct pixel {
-        int R;
-        int G;
-        int B;
-    };
+Image::pixel Image::YCbCrToRGB(double Y, double Cb, double Cr) {
+    pixel pix;
 
-    Image() {
-        RGB_.resize(16);
-        for (int i = 0; i < 16; i++) {
-            RGB_[i].resize(16);
-        }
-    };
+    pix.R = round(Y + 1.402 * (Cr - 128));
+    pix.G = round(Y - 0.34414 * (Cb - 128) - 0.71414 * (Cr - 128));
+    pix.B = round(Y + 1.772 * (Cb - 128));
 
-    pixel YCbCrToRGB(double Y, double Cb, double Cr) {
-        pixel pix;
+    pix.R = min(max(0, pix.R), 255);
+    pix.G = min(max(0, pix.G), 255);
+    pix.B = min(max(0, pix.B), 255);
 
-        pix.R = round(Y + 1.402 * (Cr - 128));
-        pix.G = round(Y - 0.34414 * (Cb-128) - 0.71414 * (Cr-128));
-        pix.B = round(Y + 1.772  * (Cb-128));
+    return pix;
+}
 
-        pix.R = min(max(0, pix.R), 255);
-        pix.G = min(max(0, pix.G), 255);
-        pix.B = min(max(0, pix.B), 255);
+void Image::YCbCrToRGB(vector<creatorMatrix> &Y, creatorMatrix &Cb, creatorMatrix &Cr) {
+    for (int y = 0; y < 16; y++) {
+        for (int x = 0; x < 16; x++) {
+            int Y_num = get_y_num(Y, y, x);
+            int Cb_num = Cb.get_el_matrix_final(y / 2, x / 2);
+            int Cr_num = Cr.get_el_matrix_final(y / 2, x / 2);
 
-        return pix;
-    }
-
-    void YCbCrToRGB(vector<creatorMatrix> &Y, creatorMatrix &Cb, creatorMatrix &Cr) {
-        for (int y = 0; y < 16; y++) {
-            for (int x = 0; x < 16; x++) {
-                int Y_num = get_y_num(Y, y, x);
-                int Cb_num = Cb.get_el_matrix_final(y/2,x/2);
-                int Cr_num = Cr.get_el_matrix_final(y/2,x/2);
-
-                RGB_[y][x] = YCbCrToRGB(Y_num, Cb_num, Cr_num);
-            }
+            RGB_[y][x] = YCbCrToRGB(Y_num, Cb_num, Cr_num);
         }
     }
+}
 
-    void print_image() {
-        cout << "R:\n";
-        for (int i = 0; i < 8; i++) {
-            for (int j = 0; j < 8; j++) {
-                cout << RGB_[i][j].R << " ";
-            }
-            cout << "\n";
-        }
-        cout << "\n";
-
-        cout << "G:\n";
-        for (int i = 0; i < 8; i++) {
-            for (int j = 0; j < 8; j++) {
-                cout << RGB_[i][j].G << " ";
-            }
-            cout << "\n";
-        }
-        cout << "\n";
-
-        cout << "B:\n";
-        for (int i = 0; i < 8; i++) {
-            for (int j = 0; j < 8; j++) {
-                cout << RGB_[i][j].B << " ";
-            }
-            cout << "\n";
+void Image::print_image() const {
+    cout << "R:\n";
+    for (int i = 0; i < 8; i++) {
+        for (int j = 0; j < 8; j++) {
+            cout << RGB_[i][j].R << " ";
         }
         cout << "\n";
     }
+    cout << "\n";
 
-    int get_y_num(vector<creatorMatrix> Y, int ind_i, int ind_j) {
-        if (ind_i <= 7 && ind_j <= 7) {
-            return Y[0].get_el_matrix_final(ind_i, ind_j);
-        } else if (ind_i <= 7 &&  ind_j >= 8) {
-            return Y[1].get_el_matrix_final(ind_i, ind_j - 8);
-        } else if (ind_i >= 8 && ind_j <= 7) {
-            return Y[2].get_el_matrix_final(ind_i - 8, ind_j);
-        } else if (ind_i >= 8 && ind_j >= 8) {
-            return Y[3].get_el_matrix_final(ind_i - 8, ind_j - 8);
+    cout << "G:\n";
+    for (int i = 0; i < 8; i++) {
+        for (int j = 0; j < 8; j++) {
+            cout << RGB_[i][j].G << " ";
+        }
+        cout << "\n";
+    }
+    cout << "\n";
+
+    cout << "B:\n";
+    for (int i = 0; i < 8; i++) {
+        for (int j = 0; j < 8; j++) {
+            cout << RGB_[i][j].B << " ";
+        }
+        cout << "\n";
+    }
+    cout << "\n";
+}
+
+int Image::get_y_num(vector<creatorMatrix> Y, int ind_i, int ind_j) {
+    if (ind_i <= 7 && ind_j <= 7) {
+        return Y[0].get_el_matrix_final(ind_i, ind_j);
+    } else if (ind_i <= 7 && ind_j >= 8) {
+        return Y[1].get_el_matrix_final(ind_i, ind_j - 8);
+    } else if (ind_i >= 8 && ind_j <= 7) {
+        return Y[2].get_el_matrix_final(ind_i - 8, ind_j);
+    } else if (ind_i >= 8 && ind_j >= 8) {
+        return Y[3].get_el_matrix_final(ind_i - 8, ind_j - 8);
+    }
+}
+
+int Image::get_el_matrix_r(int ind_i, int ind_j) const {
+    return RGB_[ind_i][ind_j].R;
+}
+
+int Image::get_el_matrix_g(int ind_i, int ind_j) const {
+    return RGB_[ind_i][ind_j].G;
+}
+
+int Image::get_el_matrix_b(int ind_i, int ind_j) const {
+    return RGB_[ind_i][ind_j].B;
+}
+
+//decode
+void decoder::decode(string path) {
+    creator_matrix_y_.resize(4);
+    std::ifstream file(path, std::ios::binary);
+
+    if (!file.is_open()) {
+        is_open_ = false;
+        return;
+    }
+
+    file.seekg(0, std::ios::end);
+    std::streamsize size = file.tellg();
+    file.seekg(0, std::ios::beg);
+
+    is_open_ = true;
+
+    std::vector<int> buffer(size);
+    char byte;
+    int ind = 0;
+    while (file.get(byte)) {
+        buffer[ind] = static_cast<int>(static_cast<unsigned char>(byte));
+        ind++;
+    }
+
+    std::vector<Section> sections;
+    map<int, int> mapf;
+    mapf[0xD8] = 0;
+    mapf[0xFE] = 2; //0xFE, 0xE0 - in local test
+    mapf[0xDB] = 2;
+    mapf[0xC0] = 2;
+    mapf[0xC4] = 2;
+    mapf[0xDA] = 2;
+    mapf[0xD9] = 0;
+
+    int i = 0;
+    bool findDA = false;
+    while (i + 1 < size) {
+        if (buffer[i] == MARKER && mapf.find(buffer[i + 1]) != mapf.end()) {
+            int indStart = i + 2;
+            Section this_section(buffer[i + 1], mapf[buffer[i + 1]]);
+            for (int j = indStart; j < indStart + this_section.get_cnt_byte_4_length(); j++) {
+                this_section.add_length(buffer[j]);
+            }
+
+            for (int j = indStart; j < indStart + this_section.get_length(); j++) {
+                this_section.add_buffer(buffer[j]);
+            }
+
+            i = indStart + this_section.get_length();
+            sections.push_back(this_section);
+
+            if (this_section.get_marker() == 0xDB) {
+                table_quant new_table_quant(this_section);
+                _table_quants.push_back(new_table_quant);
+                map_table_quants_[new_table_quant.get_ind_table()] = new_table_quant;
+            } else if (this_section.get_marker() == 0xC0) {
+                sof0 new_sof0(this_section);
+                _sof0s.push_back(new_sof0);
+            } else if (this_section.get_marker() == 0xC4) {
+                dht new_dht(this_section);
+                _dhts.push_back(new_dht);
+            } else if (this_section.get_marker() == 0xDA) {
+                findDA = true;
+                sos new_sos(this_section);
+                _soss.push_back(new_sos);
+            }
+        } else if (findDA) {
+            end_symbols_.push_back(buffer[i]);
+            i++;
+        } else {
+            //throw
         }
     }
 
-    int get_el_matrix_r(int ind_i, int ind_j) const {
-        return RGB_[ind_i][ind_j].R;
+    createMatrix();
+}
+
+void decoder::createMatrix() {
+    vector<dht> dc;
+    vector<dht> ac;
+
+    for (int i = 0; i < get_size_dhts(); i++) {
+        if (get_dht(i).get_type_dht() == 0) {
+            dc.push_back(get_dht(i));
+        } else {
+            ac.push_back(get_dht(i));
+        }
     }
 
-    int get_el_matrix_g(int ind_i, int ind_j) const {
-        return RGB_[ind_i][ind_j].G;
+    sort(dc.begin(), dc.end(), comp_dht);
+    sort(ac.begin(), ac.end(), comp_dht);
+
+    vector<char> bytes;
+    for (int i = 0; i < end_symbols_.size(); i++) {
+        int num = end_symbols_[i];
+        string t;
+        while (num > 0) {
+            t.push_back('0' + num % 2);
+            num /= 2;
+        }
+
+        while (t.size() < 8) {
+            t.push_back('0');
+        }
+
+        while (!t.empty()) {
+            bytes.push_back(t.back());
+            t.pop_back();
+        }
     }
 
-    int get_el_matrix_b(int ind_i, int ind_j) const {
-        return RGB_[ind_i][ind_j].B;
-    }
-private:
-    vector<vector<pixel>> RGB_;
-};
-
-class decoder {
-public:
-    void decode(string path) {
-        creator_matrix_y_.resize(4);
-        std::ifstream file(path, std::ios::binary);
-
-        if (!file.is_open()) {
-            is_open_ = false;
-            return;
-        }
-
-        file.seekg(0, std::ios::end);
-        std::streamsize size = file.tellg();
-        file.seekg(0, std::ios::beg);
-
-        is_open_ = true;
-
-        std::vector<int> buffer(size);
-        char byte;
-        int ind = 0;
-        while (file.get(byte)) {
-            buffer[ind] = static_cast<int>(static_cast<unsigned char>(byte));
-            ind++;
-        }
-
-        std::vector<Section> sections;
-        map<int, int> mapf;
-        mapf[0xD8] = 0;
-        mapf[0xFE] = 2; //0xFE, 0xE0 - in local test
-        mapf[0xDB] = 2;
-        mapf[0xC0] = 2;
-        mapf[0xC4] = 2;
-        mapf[0xDA] = 2;
-        mapf[0xD9] = 0;
-
-        int i = 0;
-        bool findDA = false;
-        while (i + 1 < size) {
-            if (buffer[i] == MARKER && mapf.find(buffer[i + 1]) != mapf.end()) {
-                int indStart = i + 2;
-                Section this_section(buffer[i + 1], mapf[buffer[i + 1]]);
-                for (int j = indStart; j < indStart + this_section.get_cnt_byte_4_length(); j++) {
-                    this_section.add_length(buffer[j]);
-                }
-
-                for (int j = indStart; j < indStart + this_section.get_length(); j++) {
-                    this_section.add_buffer(buffer[j]);
-                }
-
-                i = indStart + this_section.get_length();
-                sections.push_back(this_section);
-
-                if (this_section.get_marker() == 0xDB) {
-                    table_quant new_table_quant(this_section);
-                    _table_quants.push_back(new_table_quant);
-                    map_table_quants_[new_table_quant.get_ind_table()] = new_table_quant;
-                } else if (this_section.get_marker() == 0xC0) {
-                    sof0 new_sof0(this_section);
-                    _sof0s.push_back(new_sof0);
-                } else if (this_section.get_marker() == 0xC4) {
-                    dht new_dht(this_section);
-                    _dhts.push_back(new_dht);
-                } else if (this_section.get_marker() == 0xDA) {
-                    findDA = true;
-                    sos new_sos(this_section);
-                    _soss.push_back(new_sos);
-                }
-            } else if (findDA) {
-                end_symbols_.push_back(buffer[i]);
-                i++;
-            } else {
-                //throw
-            }
-        }
-
-        createMatrix();
-    }
-
-    static bool comp_dht(const dht& l, const dht& r) {
-        return l.get_id() < r.get_id();
-    }
-
-    void createMatrix() {
-        vector<dht> dc;
-        vector<dht> ac;
-
-        for (int i = 0; i < get_size_dhts(); i++) {
-            if (get_dht(i).get_type_dht() == 0) {
-                dc.push_back(get_dht(i));
-            } else {
-                ac.push_back(get_dht(i));
-            }
-        }
-
-        sort(dc.begin(), dc.end(), comp_dht);
-        sort(ac.begin(), ac.end(), comp_dht);
-
-        vector<char> bytes;
-        for (int i = 0; i < end_symbols_.size(); i++) {
-            int num = end_symbols_[i];
-            string t;
-            while (num > 0) {
-                t.push_back('0' + num % 2);
-                num /= 2;
-            }
-
-            while (t.size() < 8) {
-                t.push_back('0');
-            }
-
-            while (!t.empty()) {
-                bytes.push_back(t.back());
-                t.pop_back();
-            }
-        }
-
-        //create matrix Y
-        for (int i = 0; i < 4; i++) {
-            creatorMatrix creator_y;
-            int id_dc_y = _soss[0].get_id_dc(0);
-            int id_ac_y = _soss[0].get_id_ac(0);
-            creator_y.createMatrix(bytes, dc[id_dc_y].get_tree_list(), ac[id_ac_y].get_tree_list());
-
-            reverse(bytes.begin(), bytes.end());
-            for (int z = 0; z <= creator_y.get_last_use_byte(); z++) {
-                bytes.pop_back();
-            }
-            reverse(bytes.begin(), bytes.end());
-
-            if (i != 0) {
-                int new_el = creator_matrix_y_[i - 1].get_el_matrix(0, 0) +
-                    creator_y.get_el_matrix(0, 0);
-                creator_y.set_el_matrix(0, 0, new_el);
-            }
-
-            creator_matrix_y_[i] = creator_y;
-        }
-
-        //create matrix Cb
-        creatorMatrix creator_Cb;
-        int id_dc_cb = _soss[0].get_id_dc(1);
-        int id_ac_cb = _soss[0].get_id_ac(1);
-        creator_Cb.createMatrix(bytes, dc[id_dc_cb].get_tree_list(), ac[id_ac_cb].get_tree_list());
+    //create matrix Y
+    for (int i = 0; i < 4; i++) {
+        creatorMatrix creator_y;
+        int id_dc_y = _soss[0].get_id_dc(0);
+        int id_ac_y = _soss[0].get_id_ac(0);
+        creator_y.createMatrix(bytes, dc[id_dc_y].get_tree_list(), ac[id_ac_y].get_tree_list());
 
         reverse(bytes.begin(), bytes.end());
-        for (int z = 0; z <= creator_Cb.get_last_use_byte(); z++) {
+        for (int z = 0; z <= creator_y.get_last_use_byte(); z++) {
             bytes.pop_back();
         }
         reverse(bytes.begin(), bytes.end());
 
-        creator_matrix_Cb_ = creator_Cb;
-
-        //create matrix Cr
-        creatorMatrix creator_Cr;
-        int id_dc_cr = _soss[0].get_id_dc(2);
-        int id_ac_cr = _soss[0].get_id_ac(2);
-        creator_Cr.createMatrix(bytes, dc[id_dc_cr].get_tree_list(), ac[id_ac_cr].get_tree_list());
-
-        reverse(bytes.begin(), bytes.end());
-        for (int z = 0; z <= creator_Cr.get_last_use_byte(); z++) {
-            bytes.pop_back();
-        }
-        reverse(bytes.begin(), bytes.end());
-
-        creator_matrix_Cr_ = creator_Cr;
-
-        calculations_quant();
-        calculations_reverse_cos();
-        calculations_final();
-
-        Image image;
-        image.YCbCrToRGB(creator_matrix_y_, creator_matrix_Cb_, creator_matrix_Cr_);
-        //image.print_image();
-
-        image_ = image;
-    }
-
-    void calculations_quant() {
-        for (int i = 0; i < 4; i++) {
-            calculations_quant(creator_matrix_y_[i], 0);
+        if (i != 0) {
+            int new_el = creator_matrix_y_[i - 1].get_el_matrix(0, 0) +
+                         creator_y.get_el_matrix(0, 0);
+            creator_y.set_el_matrix(0, 0, new_el);
         }
 
-        calculations_quant(creator_matrix_Cb_, 1);
-        calculations_quant(creator_matrix_Cr_, 2);
+        creator_matrix_y_[i] = creator_y;
     }
 
-    void calculations_quant(creatorMatrix &creator, int id_channel) {
-        for(int i = 0; i < 8; i++) {
-            for (int j = 0; j < 8; j++) {
-                int id_channel_quant = _sof0s[0].get_id_quant(id_channel);
-                int new_el = creator.get_el_matrix(i, j) * map_table_quants_[id_channel_quant].get_el_matrix(i, j);
-                creator.set_el_matrix_quant(i, j, new_el);
-            }
+    //create matrix Cb
+    creatorMatrix creator_Cb;
+    int id_dc_cb = _soss[0].get_id_dc(1);
+    int id_ac_cb = _soss[0].get_id_ac(1);
+    creator_Cb.createMatrix(bytes, dc[id_dc_cb].get_tree_list(), ac[id_ac_cb].get_tree_list());
+
+    reverse(bytes.begin(), bytes.end());
+    for (int z = 0; z <= creator_Cb.get_last_use_byte(); z++) {
+        bytes.pop_back();
+    }
+    reverse(bytes.begin(), bytes.end());
+
+    creator_matrix_Cb_ = creator_Cb;
+
+    //create matrix Cr
+    creatorMatrix creator_Cr;
+    int id_dc_cr = _soss[0].get_id_dc(2);
+    int id_ac_cr = _soss[0].get_id_ac(2);
+    creator_Cr.createMatrix(bytes, dc[id_dc_cr].get_tree_list(), ac[id_ac_cr].get_tree_list());
+
+    reverse(bytes.begin(), bytes.end());
+    for (int z = 0; z <= creator_Cr.get_last_use_byte(); z++) {
+        bytes.pop_back();
+    }
+    reverse(bytes.begin(), bytes.end());
+
+    creator_matrix_Cr_ = creator_Cr;
+
+    calculations_quant();
+    calculations_reverse_cos();
+    calculations_final();
+
+    Image image;
+    image.YCbCrToRGB(creator_matrix_y_, creator_matrix_Cb_, creator_matrix_Cr_);
+    //image.print_image();
+
+    image_ = image;
+}
+
+void decoder::calculations_quant() {
+    for (int i = 0; i < 4; i++) {
+        calculations_quant(creator_matrix_y_[i], 0);
+    }
+
+    calculations_quant(creator_matrix_Cb_, 1);
+    calculations_quant(creator_matrix_Cr_, 2);
+}
+
+void decoder::calculations_quant(creatorMatrix &creator, int id_channel) {
+    for (int i = 0; i < 8; i++) {
+        for (int j = 0; j < 8; j++) {
+            int id_channel_quant = _sof0s[0].get_id_quant(id_channel);
+            int new_el = creator.get_el_matrix(i, j) * map_table_quants_[id_channel_quant].get_el_matrix(i, j);
+            creator.set_el_matrix_quant(i, j, new_el);
         }
     }
+}
 
-    void calculations_reverse_cos() {
-        for (int i = 0; i < 4; i++) {
-            calculations_reverse_cos(creator_matrix_y_[i]);
-        }
+double decoder::find_k_c(int id) const {
+    if (id == 0) {
+        return 1 / sqrt(2);
+    }
+    return 1;
+}
 
-        calculations_reverse_cos(creator_matrix_Cb_);
-        calculations_reverse_cos(creator_matrix_Cr_);
+void decoder::calculations_reverse_cos() {
+    for (int i = 0; i < 4; i++) {
+        calculations_reverse_cos(creator_matrix_y_[i]);
     }
 
-    double find_k_c(int id) const {
-        if (id == 0) {
-            return 1/sqrt(2);
-        }
-        return 1;
-    }
+    calculations_reverse_cos(creator_matrix_Cb_);
+    calculations_reverse_cos(creator_matrix_Cr_);
+}
 
-    void calculations_reverse_cos(creatorMatrix &creator) {
-        //x, u - column, y, v - line
-        for(int y = 0; y < 8; y++) {
-            for (int x = 0; x < 8; x++) {
-                double new_el = 0;
-                for (int u = 0; u < 8; u++) {
-                    for (int v = 0; v < 8; v++) {
-                        double pi = 3.14159265358979323846;
-                        double arg_cos_1 = (2 * x + 1) * u * pi /16.0;
-                        double arg_cos_2 = (2 * y + 1) * v * pi /16.0;
-                        double this_el = 1/4.0 * find_k_c(u) * find_k_c(v) * cos(arg_cos_1) * cos(arg_cos_2);
-                        this_el *= creator.get_el_matrix_quant(v, u);
-                        new_el += this_el;
-                    }
+void decoder::calculations_reverse_cos(creatorMatrix &creator) {
+    //x, u - column, y, v - line
+    for (int y = 0; y < 8; y++) {
+        for (int x = 0; x < 8; x++) {
+            double new_el = 0;
+            for (int u = 0; u < 8; u++) {
+                for (int v = 0; v < 8; v++) {
+                    double pi = 3.14159265358979323846;
+                    double arg_cos_1 = (2 * x + 1) * u * pi / 16.0;
+                    double arg_cos_2 = (2 * y + 1) * v * pi / 16.0;
+                    double this_el = 1 / 4.0 * find_k_c(u) * find_k_c(v) * cos(arg_cos_1) * cos(arg_cos_2);
+                    this_el *= creator.get_el_matrix_quant(v, u);
+                    new_el += this_el;
                 }
-                creator.set_el_matrix_reverse_cos(y, x, round(new_el));
             }
+            creator.set_el_matrix_reverse_cos(y, x, round(new_el));
         }
     }
+}
 
-    void calculations_final() {
-        for (int i = 0; i < 4; i++) {
-            calculations_final(creator_matrix_y_[i]);
+void decoder::calculations_final() {
+    for (int i = 0; i < 4; i++) {
+        calculations_final(creator_matrix_y_[i]);
+    }
+
+    calculations_final(creator_matrix_Cb_);
+    calculations_final(creator_matrix_Cr_);
+}
+
+void decoder::calculations_final(creatorMatrix &creator) {
+    for (int i = 0; i < 8; i++) {
+        for (int j = 0; j < 8; j++) {
+            int new_el = creator.get_el_matrix_reverse_cos(i, j);
+            new_el = min(max(0, new_el + 128), 255);
+            creator.set_el_matrix_final(i, j, new_el);
         }
-
-        calculations_final(creator_matrix_Cb_);
-        calculations_final(creator_matrix_Cr_);
     }
+}
 
-    void calculations_final(creatorMatrix &creator) {
-        for (int i = 0; i < 8; i++) {
-            for (int j = 0; j < 8; j++) {
-                int new_el = creator.get_el_matrix_reverse_cos(i, j);
-                new_el = min(max(0, new_el + 128), 255);
-                creator.set_el_matrix_final(i, j, new_el);
-            }
-        }
-    }
+int decoder::get_size_table_quants() const {
+    return _table_quants.size();
+}
 
-    int get_size_table_quants() const {
-        return _table_quants.size();
-    }
+int decoder::get_size_sof0s() const {
+    return _sof0s.size();
+}
 
-    int get_size_sof0s() const {
-        return _sof0s.size();
-    }
+int decoder::get_size_dhts() const {
+    return _dhts.size();
+}
 
-    int get_size_dhts() const {
-        return _dhts.size();
-    }
+int decoder::get_size_soss() const {
+    return _soss.size();
+}
 
-    int get_size_soss() const {
-        return _soss.size();
-    }
+bool decoder::get_is_open() const {
+    return is_open_;
+}
 
-    bool get_is_open() const {
-        return is_open_;
-    }
+sof0 decoder::get_sof0(int ind) const {
+    return _sof0s[ind];
+}
 
-    sof0 get_sof0(int ind) const {
-        return _sof0s[ind];
-    }
+dht decoder::get_dht(int ind) const {
+    return _dhts[ind];
+}
 
-    dht get_dht(int ind) const {
-        return _dhts[ind];
-    }
+table_quant decoder::get_table_quant(int ind) const {
+    return _table_quants[ind];
+}
 
-    table_quant get_table_quant(int ind) const {
-        return _table_quants[ind];
-    }
+sos decoder::get_sos(int ind) const {
+    return _soss[ind];
+}
 
-    sos get_sos(int ind) const {
-        return _soss[ind];
-    }
+int decoder::get_size_creator_matrix_y() const {
+    return creator_matrix_y_.size();
+}
 
-    int get_size_creator_matrix_y() const {
-        return creator_matrix_y_.size();
-    }
+creatorMatrix decoder::get_creator_matrix_y(int ind) const {
+    return creator_matrix_y_[ind];
+}
 
-    creatorMatrix get_creator_matrix_y(int ind) const {
-        return creator_matrix_y_[ind];
-    }
+creatorMatrix decoder::get_creator_matrix_Cb() const {
+    return creator_matrix_Cb_;
+}
 
-    creatorMatrix get_creator_matrix_Cb() const {
-        return creator_matrix_Cb_;
-    }
+creatorMatrix decoder::get_creator_matrix_Cr() const {
+    return creator_matrix_Cr_;
+}
 
-    creatorMatrix get_creator_matrix_Cr() const {
-        return creator_matrix_Cr_;
-    }
-
-    Image get_image() const {
-        return image_;
-    }
-private:
-    vector<table_quant> _table_quants;
-    vector<sof0> _sof0s;
-    vector<dht> _dhts;
-    vector<sos> _soss;
-
-    map<int, table_quant> map_table_quants_;
-
-    vector<int> end_symbols_;
-    bool is_open_;
-
-    vector<creatorMatrix> creator_matrix_y_;
-    creatorMatrix creator_matrix_Cb_;
-    creatorMatrix creator_matrix_Cr_;
-
-    Image image_;
-};
+Image decoder::get_image() const {
+    return image_;
+}

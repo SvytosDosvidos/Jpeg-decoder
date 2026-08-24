@@ -9,6 +9,11 @@ add_executable(
         jpg_decoder
         files/main.cpp
         files/decode.cpp
+        files/section.cpp
+        files/section.h
+        files/filters.cpp
+        files/filters.h
+        files/decode.h
 )
 
 include(FetchContent)
@@ -24,6 +29,12 @@ FetchContent_MakeAvailable(Catch2)
 
 add_executable(
         jpg_decoder_tests
+        files/decode.cpp
+        files/section.cpp
+        files/section.h
+        files/filters.cpp
+        files/filters.h
+        files/decode.h
         files/tests.cpp
 )
 
