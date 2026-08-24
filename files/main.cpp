@@ -1,5 +1,5 @@
 #include <iostream>
-#include "decoder.cpp"
+#include "parser.cpp"
 
 using namespace std;
 
@@ -10,7 +10,7 @@ int main(int argc, char *argv[]) {
     }
 
     cout << "this_open\n";
-    decoder decoder;
+    parser decoder;
     decoder.decode(argv[1]);
     return 0;
 }

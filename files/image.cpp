@@ -35,8 +35,8 @@ void Image::YCbCrToRGB(std::vector<creatorMatrix> &Y, creatorMatrix &Cb, creator
 
 void Image::print_image() const {
     std::cout << "R:\n";
-    for (int i = 0; i < 8; i++) {
-        for (int j = 0; j < 8; j++) {
+    for (int i = 0; i < 16; i++) {
+        for (int j = 0; j < 16; j++) {
             std::cout << RGB_[i][j].R << " ";
         }
         std::cout << "\n";
@@ -44,8 +44,8 @@ void Image::print_image() const {
     std::cout << "\n";
 
     std::cout << "G:\n";
-    for (int i = 0; i < 8; i++) {
-        for (int j = 0; j < 8; j++) {
+    for (int i = 0; i < 16; i++) {
+        for (int j = 0; j < 16; j++) {
             std::cout << RGB_[i][j].G << " ";
         }
         std::cout << "\n";
@@ -53,8 +53,8 @@ void Image::print_image() const {
     std::cout << "\n";
 
     std::cout << "B:\n";
-    for (int i = 0; i < 8; i++) {
-        for (int j = 0; j < 8; j++) {
+    for (int i = 0; i < 16; i++) {
+        for (int j = 0; j < 16; j++) {
             std::cout << RGB_[i][j].B << " ";
         }
         std::cout << "\n";

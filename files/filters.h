@@ -36,7 +36,7 @@ public:
     int get_el_matrix(int i, int j) const;
 
     std::vector<std::vector<int>> get_matrix() const;
-
+    bool get_flag_use_bytes() const;
 private:
     int length_;
     int size_byte_;
@@ -73,6 +73,8 @@ public:
     }
 
     int get_id_quant(int ind) const;
+    int get_id_channel(int ind) const;
+    bool get_flag_use_bytes() const;
 private:
     int length_;
     int precision_;
@@ -112,7 +114,7 @@ public:
     int get_id() const;
 
     std::map<std::string, int> get_tree_list() const;
-
+    bool get_flag_use_bytes() const;
 private:
     int length_;
     int type_dht_;
@@ -149,9 +151,11 @@ public:
         return l.id < r.id;
     }
 
-    int get_id_dc(int id) const;
-    int get_id_ac(int id) const;
+    int get_id_dc(int ind) const;
+    int get_id_ac(int ind) const;
+    int get_id(int ind) const;
 
+    bool get_flag_use_bytes() const;
 private:
     int length_;
     int cnt_channels_;

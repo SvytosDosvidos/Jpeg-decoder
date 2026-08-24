@@ -1,7 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <filesystem>
 
-#include "../decoder.h"
+#include "../parser.h"
 #include "../filters.h"
 #include "../section.h"
 
@@ -10,7 +10,7 @@ TEST_CASE("First test") {
 }
 
 TEST_CASE("test_jpg.jpg") {
-    decoder jpg_decoder;
+    parser jpg_decoder;
 
     const std::filesystem::path path =
         std::filesystem::path(TEST_DATA_DIR) / "tests/photos/test_jpg.jpg";

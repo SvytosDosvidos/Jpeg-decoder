@@ -98,6 +98,10 @@ std::vector<std::vector<int> > table_quant::get_matrix() const {
     return matrix_;
 }
 
+bool table_quant::get_flag_use_bytes() const {
+    return flag_use_bytes_;
+}
+
 //sof0
 bool sof0::operator==(const sof0 &other) const {
     return length_ == other.length_
@@ -144,17 +148,18 @@ sof0::sof0(Section &section) {
         create_sof0_correct_ = false;
         return;
     }
+}
 
-    for (int i = 0; i < 3; i++) {
-        if (channels_[i].id != i + 1) {
-            create_sof0_correct_ = false;
-            return;
-        }
-    }
+int sof0::get_id_channel(int ind) const {
+    return channels_[ind].id;
 }
 
 int sof0::get_id_quant(int ind) const {
     return channels_[ind].id_quant;
+}
+
+bool sof0::get_flag_use_bytes() const {
+    return flag_use_bytes_;
 }
 
 //dht
@@ -284,6 +289,10 @@ std::map<std::string, int> dht::get_tree_list() const {
     return tree_list_;
 }
 
+bool dht::get_flag_use_bytes() const {
+    return flag_use_bytes_;
+}
+
 //sos
 sos::sos(Section &section) {
     flag_use_bytes_ = true;
@@ -314,6 +323,7 @@ sos::sos(Section &section) {
         section.get_buffer_el(2 * cnt_channels_ + 4) != 0x3F &&
         section.get_buffer_el(2 * cnt_channels_ + 5) != 0x00) {
         flag_use_bytes_ = false;
+        return;
         }
 
     sort(channels_.begin(), channels_.end(), comp);
@@ -325,10 +335,18 @@ bool sos::operator==(const sos &other) const {
            && channels_ == other.channels_;
 }
 
-int sos::get_id_dc(int id) const {
-    return channels_[id].id_DC;
+int sos::get_id_dc(int ind) const {
+    return channels_[ind].id_DC;
 }
 
-int sos::get_id_ac(int id) const {
-    return channels_[id].id_AC;
+int sos::get_id_ac(int ind) const {
+    return channels_[ind].id_AC;
+}
+
+int sos::get_id(int ind) const {
+    return channels_[ind].id;
+}
+
+bool sos::get_flag_use_bytes() const {
+    return flag_use_bytes_;
 }

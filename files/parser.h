@@ -1,10 +1,11 @@
 #pragma once
 
-#include<iostream>
 #include<vector>
 #include<string>
 #include<map>
+#include<concepts>
 #include<fstream>
+#include<stdexcept>
 
 #include "creatorMatrix.h"
 #include "filters.h"
@@ -12,7 +13,12 @@
 
 #include "../cmake-build-debug/_deps/catch2-src/src/catch2/generators/catch_generators.hpp"
 
-class decoder {
+template <typename T>
+concept HasGetFlag = requires(T t) {
+    t.get_flag_use_bytes();
+};
+
+class parser {
 public:
     void decode(std::string path);
 
@@ -43,8 +49,12 @@ public:
     sof0 get_sof0(int ind) const;
     dht get_dht(int ind) const;
     table_quant get_table_quant(int ind) const;
-
     sos get_sos(int ind) const;
+
+    void corret_parse();
+
+    template <HasGetFlag T>
+    void corret_parse(std::vector<T> markers);
 
     int get_size_creator_matrix_y() const;
 
@@ -54,10 +64,10 @@ public:
 
     Image get_image() const;
 private:
-    std::vector<table_quant> _table_quants;
-    std::vector<sof0> _sof0s;
-    std::vector<dht> _dhts;
-    std::vector<sos> _soss;
+    std::vector<table_quant> table_quants_;
+    std::vector<sof0> sof0s_;
+    std::vector<dht> dhts_;
+    std::vector<sos> soss_;
 
     std::map<int, table_quant> map_table_quants_;
 
