@@ -1,10 +1,6 @@
 #pragma once
 #include<vector>
 #include<string>
-#include<map>
-#include<concepts>
-#include<fstream>
-#include<stdexcept>
 
 #include "parser.h"
 #include "creator_matrix.h"
@@ -14,6 +10,8 @@
 
 class Decoder {
 public:
+    Decoder() {};
+
     void decode(std::string path);
 
     void createMatrix();
@@ -35,6 +33,7 @@ public:
     CreatorMatrix get_creator_matrix_Cb() const;
     CreatorMatrix get_creator_matrix_Cr() const;
 
+    Parser get_parser() const;
     Image get_image() const;
 private:
     Parser parser_;

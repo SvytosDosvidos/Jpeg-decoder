@@ -3,13 +3,9 @@
 #include<vector>
 #include<string>
 #include<map>
-#include<concepts>
 #include<fstream>
-#include<stdexcept>
 
-#include "creator_matrix.h"
 #include "markers.h"
-#include "image.h"
 
 #include "../cmake-build-debug/_deps/catch2-src/src/catch2/generators/catch_generators.hpp"
 
@@ -28,18 +24,7 @@ public:
         return l.get_id() < r.get_id();
     }
 
-    void createMatrix();
-
-    void calculations_quant();
-    void calculations_quant(CreatorMatrix &creator, int id_channel);
-
-    double find_k_c(int id) const;
-    void calculations_reverse_cos();
-    void calculations_reverse_cos(CreatorMatrix &creator);
-
-    void calculations_final();
-
-    void calculations_final(CreatorMatrix &creator);
+    void ProcessingEndSymbols(std::vector<char> &bits);
 
     int get_size_table_quants() const;
     int get_size_sof0s() const;
@@ -51,20 +36,13 @@ public:
     Sof0 get_sof0(int ind) const;
     Dht get_dht(int ind) const;
     TableQuant get_table_quant(int ind) const;
+    TableQuant get_map_table_quant(int ind);
     Sos get_sos(int ind) const;
 
     void corret_parse();
 
     template <HasGetFlag T>
     void corret_parse(std::vector<T> markers);
-
-    int get_size_creator_matrix_y() const;
-
-    CreatorMatrix get_creator_matrix_y(int ind) const;
-    CreatorMatrix get_creator_matrix_Cb() const;
-    CreatorMatrix get_creator_matrix_Cr() const;
-
-    Image get_image() const;
 private:
     std::vector<TableQuant> table_quants_;
     std::vector<Sof0> sof0s_;
@@ -75,10 +53,4 @@ private:
 
     std::vector<int> end_symbols_;
     bool is_open_;
-
-    std::vector<CreatorMatrix> creator_matrix_y_;
-    CreatorMatrix creator_matrix_Cb_;
-    CreatorMatrix creator_matrix_Cr_;
-
-    Image image_;
 };

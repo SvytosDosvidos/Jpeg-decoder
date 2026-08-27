@@ -35,6 +35,9 @@ FetchContent_MakeAvailable(Catch2)
 
 add_executable(
         jpg_decoder_tests
+
+        files/decoder.cpp
+        files/decoder.h
         files/parser.cpp
         files/parser.h
         files/section.cpp
@@ -45,6 +48,7 @@ add_executable(
         files/image.h
         files/creator_matrix.cpp
         files/creator_matrix.h
+
         files/tests/tests.cpp
 )
 

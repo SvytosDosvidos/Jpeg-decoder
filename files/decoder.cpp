@@ -1,15 +1,11 @@
 #include "decoder.h"
 
-const int MARKER = 0xff;
-
 void Decoder::decode(std::string path) {
     creator_matrix_y_.resize(4);
-    std::ifstream file(path, std::ios::binary);
 
-    Parser Parser;
+    Parser parser;
+    parser.decode(path);
     parser_ = parser;
-
-    parser_.decode(path);
 
     createMatrix();
     image_.print_image();
@@ -19,43 +15,27 @@ void Decoder::createMatrix() {
     std::vector<Dht> dc;
     std::vector<Dht> ac;
 
-    for (int i = 0; i < get_size_dhts(); i++) {
-        if (get_dht(i).get_type_dht() == 0) {
-            dc.push_back(get_dht(i));
+    for (int i = 0; i < parser_.get_size_dhts(); i++) {
+        if (parser_.get_dht(i).get_type_dht() == 0) {
+            dc.push_back(parser_.get_dht(i));
         } else {
-            ac.push_back(get_dht(i));
+            ac.push_back(parser_.get_dht(i));
         }
     }
 
-    std::sort(dc.begin(), dc.end(), comp_dht);
-    std::sort(ac.begin(), ac.end(), comp_dht);
+    std::sort(dc.begin(), dc.end(), parser_.comp_dht);
+    std::sort(ac.begin(), ac.end(), parser_.comp_dht);
 
-    std::vector<char> bytes;
-    for (int i = 0; i < end_symbols_.size(); i++) {
-        int num = end_symbols_[i];
-        std::string t;
-        while (num > 0) {
-            t.push_back('0' + num % 2);
-            num /= 2;
-        }
-
-        while (t.size() < 8) {
-            t.push_back('0');
-        }
-
-        while (!t.empty()) {
-            bytes.push_back(t.back());
-            t.pop_back();
-        }
-    }
+    std::vector<char> bits;
+    parser_.ProcessingEndSymbols(bits);
 
     int id_Y = -1, id_Cb = -1, id_Cr = -1;
     for (int i = 0; i < 3; i++) {
-        if (soss_[0].get_id(i) == sof0s_[0].get_id_channel(0)) {
+        if (parser_.get_sos(0).get_id(i) == parser_.get_sof0(0).get_id_channel(0)) {
             id_Y = i;
-        } else if (soss_[0].get_id(i) == sof0s_[0].get_id_channel(1)) {
+        } else if (parser_.get_sos(0).get_id(i) == parser_.get_sof0(0).get_id_channel(1)) {
             id_Cb = i;
-        } else if (soss_[0].get_id(i) == sof0s_[0].get_id_channel(2)) {
+        } else if (parser_.get_sos(0).get_id(i) == parser_.get_sof0(0).get_id_channel(2)) {
             id_Cr = i;
         }
     }
@@ -67,15 +47,15 @@ void Decoder::createMatrix() {
     //create matrix Y
     for (int i = 0; i < 4; i++) {
         CreatorMatrix creator_y;
-        int id_dc_y = soss_[0].get_id_dc(id_Y);
-        int id_ac_y = soss_[0].get_id_ac(id_Y);
-        creator_y.createMatrix(bytes, dc[id_dc_y].get_tree_list(), ac[id_ac_y].get_tree_list());
+        int id_dc_y = parser_.get_sos(0).get_id_dc(id_Y);
+        int id_ac_y = parser_.get_sos(0).get_id_ac(id_Y);
+        creator_y.createMatrix(bits, dc[id_dc_y].get_tree_list(), ac[id_ac_y].get_tree_list());
 
-        reverse(bytes.begin(), bytes.end());
+        reverse(bits.begin(), bits.end());
         for (int z = 0; z <= creator_y.get_last_use_byte(); z++) {
-            bytes.pop_back();
+            bits.pop_back();
         }
-        reverse(bytes.begin(), bytes.end());
+        reverse(bits.begin(), bits.end());
 
         if (i != 0) {
             int new_el = creator_matrix_y_[i - 1].get_el_matrix(0, 0) +
@@ -88,29 +68,29 @@ void Decoder::createMatrix() {
 
     //create matrix Cb
     CreatorMatrix creator_Cb;
-    int id_dc_cb = soss_[0].get_id_dc(id_Cb);
-    int id_ac_cb = soss_[0].get_id_ac(id_Cb);
-    creator_Cb.createMatrix(bytes, dc[id_dc_cb].get_tree_list(), ac[id_ac_cb].get_tree_list());
+    int id_dc_cb = parser_.get_sos(0).get_id_dc(id_Cb);
+    int id_ac_cb = parser_.get_sos(0).get_id_ac(id_Cb);
+    creator_Cb.createMatrix(bits, dc[id_dc_cb].get_tree_list(), ac[id_ac_cb].get_tree_list());
 
-    reverse(bytes.begin(), bytes.end());
+    reverse(bits.begin(), bits.end());
     for (int z = 0; z <= creator_Cb.get_last_use_byte(); z++) {
-        bytes.pop_back();
+        bits.pop_back();
     }
-    reverse(bytes.begin(), bytes.end());
+    reverse(bits.begin(), bits.end());
 
     creator_matrix_Cb_ = creator_Cb;
 
     //create matrix Cr
     CreatorMatrix creator_Cr;
-    int id_dc_cr = soss_[0].get_id_dc(id_Cr);
-    int id_ac_cr = soss_[0].get_id_ac(id_Cr);
-    creator_Cr.createMatrix(bytes, dc[id_dc_cr].get_tree_list(), ac[id_ac_cr].get_tree_list());
+    int id_dc_cr = parser_.get_sos(0).get_id_dc(id_Cr);
+    int id_ac_cr = parser_.get_sos(0).get_id_ac(id_Cr);
+    creator_Cr.createMatrix(bits, dc[id_dc_cr].get_tree_list(), ac[id_ac_cr].get_tree_list());
 
-    reverse(bytes.begin(), bytes.end());
+    reverse(bits.begin(), bits.end());
     for (int z = 0; z <= creator_Cr.get_last_use_byte(); z++) {
-        bytes.pop_back();
+        bits.pop_back();
     }
-    reverse(bytes.begin(), bytes.end());
+    reverse(bits.begin(), bits.end());
 
     creator_matrix_Cr_ = creator_Cr;
 
@@ -136,8 +116,8 @@ void Decoder::calculations_quant() {
 void Decoder::calculations_quant(CreatorMatrix &creator, int id_channel) {
     for (int i = 0; i < 8; i++) {
         for (int j = 0; j < 8; j++) {
-            int id_channel_quant = sof0s_[0].get_id_quant(id_channel);
-            int new_el = creator.get_el_matrix(i, j) * map_table_quants_[id_channel_quant].get_el_matrix(i, j);
+            int id_channel_quant = parser_.get_sof0(0).get_id_quant(id_channel);
+            int new_el = creator.get_el_matrix(i, j) * parser_.get_map_table_quant(id_channel_quant).get_el_matrix(i, j);
             creator.set_el_matrix_quant(i, j, new_el);
         }
     }
@@ -212,6 +192,10 @@ CreatorMatrix Decoder::get_creator_matrix_Cb() const {
 
 CreatorMatrix Decoder::get_creator_matrix_Cr() const {
     return creator_matrix_Cr_;
+}
+
+Parser Decoder::get_parser() const {
+    return parser_;
 }
 
 Image Decoder::get_image() const {
