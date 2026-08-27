@@ -2,7 +2,7 @@
 #include <filesystem>
 
 #include "../parser.h"
-#include "../filters.h"
+#include "../markers.h"
 #include "../section.h"
 
 TEST_CASE("First test") {
@@ -10,7 +10,7 @@ TEST_CASE("First test") {
 }
 
 TEST_CASE("test_jpg.jpg") {
-    parser jpg_decoder;
+    Parser jpg_decoder;
 
     const std::filesystem::path path =
         std::filesystem::path(TEST_DATA_DIR) / "tests/photos/test_jpg.jpg";
@@ -29,7 +29,7 @@ TEST_CASE("test_jpg.jpg") {
     CHECK(jpg_decoder.get_size_soss() == 1);
 
     //check table_quants
-    std::vector<table_quant> table_quants;
+    std::vector<TableQuant> table_quants;
 
     //first table_quant
     std::vector<std::vector<int>> first_matrix = {
@@ -42,7 +42,7 @@ TEST_CASE("test_jpg.jpg") {
         {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
         {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}
     };
-    table_quant first_table_quant(67, 1, 0, first_matrix);
+    TableQuant first_table_quant(67, 1, 0, first_matrix);
     table_quants.push_back(first_table_quant);
 
     //second table_quant
@@ -56,7 +56,7 @@ TEST_CASE("test_jpg.jpg") {
         {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
         {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}
     };
-    table_quant second_table_quant(67, 1, 1, second_matrix);
+    TableQuant second_table_quant(67, 1, 1, second_matrix);
     table_quants.push_back(second_table_quant);
 
     for (int ind = 0; ind < table_quants.size(); ind++) {
@@ -64,11 +64,11 @@ TEST_CASE("test_jpg.jpg") {
     }
 
     //sof0
-    std::vector<channel> channels;
+    std::vector<Channel> channels;
     channels.push_back({1, 2, 2, 0});
     channels.push_back({2, 1, 1, 1});
     channels.push_back({3, 1, 1, 1});
-    sof0 first_sof0(17, 8, 16, 16, 3, channels);
+    Sof0 first_sof0(17, 8, 16, 16, 3, channels);
 
     CHECK(first_sof0 == jpg_decoder.get_sof0(0));
 
@@ -95,12 +95,12 @@ TEST_CASE("test_jpg.jpg") {
     tree_list_dht_4["10"] = 0x00;
     tree_list_dht_4["110"] = 0x01;
 
-    dht dht_1(0x15, 0, 0, true, tree_list_dht_1);
-    dht dht_2(0x1A, 1, 0, true, tree_list_dht_2);
-    dht dht_3(0x15, 0, 1, true, tree_list_dht_3);
-    dht dht_4(0x16, 1, 1, true, tree_list_dht_4);
+    Dht dht_1(0x15, 0, 0, true, tree_list_dht_1);
+    Dht dht_2(0x1A, 1, 0, true, tree_list_dht_2);
+    Dht dht_3(0x15, 0, 1, true, tree_list_dht_3);
+    Dht dht_4(0x16, 1, 1, true, tree_list_dht_4);
 
-    std::vector<dht> dhts;
+    std::vector<Dht> dhts;
     dhts.push_back(dht_1);
     dhts.push_back(dht_2);
     dhts.push_back(dht_3);
@@ -114,7 +114,7 @@ TEST_CASE("test_jpg.jpg") {
     channels_sos.push_back({1, 0, 0});
     channels_sos.push_back({2, 1, 1});
     channels_sos.push_back({3, 1, 1});
-    sos sos_1(12, 3, channels_sos);
+    Sos sos_1(12, 3, channels_sos);
 
     CHECK(sos_1 == jpg_decoder.get_sos(0));
 
@@ -251,12 +251,12 @@ TEST_CASE("test_jpg.jpg") {
         {75, 6, -72, -100, -72, -26, 3, 10}
     };
 
-    creatorMatrix creator_matrix_y_1(32, true, true, matrix_y_1, matrix_y_quant_1, matrix_y_reverse_cos_1);
-    creatorMatrix creator_matrix_y_2(19, true, true, matrix_y_2, matrix_y_quant_2, matrix_y_reverse_cos_2);
-    creatorMatrix creator_matrix_y_3(26, true, true, matrix_y_3, matrix_y_quant_3, matrix_y_reverse_cos_3);
-    creatorMatrix creator_matrix_y_4(27, true, true, matrix_y_4, matrix_y_quant_4, matrix_y_reverse_cos_4);
+    CreatorMatrix creator_matrix_y_1(32, true, true, matrix_y_1, matrix_y_quant_1, matrix_y_reverse_cos_1);
+    CreatorMatrix creator_matrix_y_2(19, true, true, matrix_y_2, matrix_y_quant_2, matrix_y_reverse_cos_2);
+    CreatorMatrix creator_matrix_y_3(26, true, true, matrix_y_3, matrix_y_quant_3, matrix_y_reverse_cos_3);
+    CreatorMatrix creator_matrix_y_4(27, true, true, matrix_y_4, matrix_y_quant_4, matrix_y_reverse_cos_4);
 
-    std::vector<creatorMatrix> creator_matrix_y;
+    std::vector<CreatorMatrix> creator_matrix_y;
     creator_matrix_y.push_back(creator_matrix_y_1);
     creator_matrix_y.push_back(creator_matrix_y_2);
     creator_matrix_y.push_back(creator_matrix_y_3);
@@ -302,7 +302,7 @@ TEST_CASE("test_jpg.jpg") {
         {-103, -95, -81, -63, -42, -24, -10, -2}
     };
 
-    creatorMatrix creator_matrix_Cb(8, true, true, matrix_Cb, matrix_Cb_quant, matrix_Cb_reverse_cos);
+    CreatorMatrix creator_matrix_Cb(8, true, true, matrix_Cb, matrix_Cb_quant, matrix_Cb_reverse_cos);
     CHECK(creator_matrix_Cb == jpg_decoder.get_creator_matrix_Cb());
 
     std::vector<std::vector<int>> matrix_Cr = {
@@ -338,7 +338,7 @@ TEST_CASE("test_jpg.jpg") {
         {58, 51, 37, 18, -2, -21, -35, -43}
     };
 
-    creatorMatrix creator_matrix_Cr(12, true, true, matrix_Cr, matrix_Cr_quant, matrix_Cr_reverse_cos);
+    CreatorMatrix creator_matrix_Cr(12, true, true, matrix_Cr, matrix_Cr_quant, matrix_Cr_reverse_cos);
     CHECK(creator_matrix_Cr == jpg_decoder.get_creator_matrix_Cr());
 
     //Test Image RGB

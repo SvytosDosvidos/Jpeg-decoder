@@ -12,12 +12,14 @@ add_executable(
         files/parser.h
         files/section.cpp
         files/section.h
-        files/filters.cpp
-        files/filters.h
+        files/markers.cpp
+        files/markers.h
         files/image.cpp
         files/image.h
-        files/creatorMatrix.cpp
-        files/creatorMatrix.h
+        files/creator_matrix.cpp
+        files/creator_matrix.h
+        files/decoder.cpp
+        files/decoder.h
 )
 
 include(FetchContent)
@@ -37,12 +39,12 @@ add_executable(
         files/parser.h
         files/section.cpp
         files/section.h
-        files/filters.cpp
-        files/filters.h
+        files/markers.cpp
+        files/markers.h
         files/image.cpp
         files/image.h
-        files/creatorMatrix.cpp
-        files/creatorMatrix.h
+        files/creator_matrix.cpp
+        files/creator_matrix.h
         files/tests/tests.cpp
 )
 

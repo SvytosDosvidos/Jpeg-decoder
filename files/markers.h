@@ -11,21 +11,21 @@
 bool go2granintsy(int ind_i);
 void next_inds(int &ind_i, int &ind_j, int &type);
 
-class table_quant {
+class TableQuant {
 public:
-    table_quant(Section &section);
+    TableQuant(Section &section);
 
-    table_quant(int length, int size_byte, int ind_table, std::vector<std::vector<int>> &matrix) : length_(length),
+    TableQuant(int length, int size_byte, int ind_table, std::vector<std::vector<int>> &matrix) : length_(length),
         size_byte_(size_byte), ind_table_(ind_table), matrix_(matrix) {
     };
 
-    table_quant() = default;
-    table_quant(const table_quant &) = default;
-    table_quant(table_quant &&) = default;
-    table_quant &operator=(const table_quant &) = default;
-    table_quant &operator=(table_quant &&) = default;
+    TableQuant() = default;
+    TableQuant(const TableQuant &) = default;
+    TableQuant(TableQuant &&) = default;
+    TableQuant &operator=(const TableQuant &) = default;
+    TableQuant &operator=(TableQuant &&) = default;
 
-    bool operator==(const table_quant &other) const;
+    bool operator==(const TableQuant &other) const;
 
     void create_matrix(Section &section);
 
@@ -47,28 +47,28 @@ private:
     bool flag_use_bytes_;
 };
 
-struct channel {
+struct Channel {
     int id;
     int h;
     int w;
     int id_quant;
 
-    bool operator==(const channel &other) const {
+    bool operator==(const Channel &other) const {
         return id == other.id && h == other.h
                && w == other.w && id_quant == other.id_quant;
     }
 };
 
-class sof0 {
+class Sof0 {
 public:
-    sof0(int length, int precision, int heigth, int width, int cnt_channels,
-        std::vector<channel> channels) : length_(length), precision_(precision), heigth_(heigth), width_(width),
+    Sof0(int length, int precision, int height, int width, int cnt_channels,
+        std::vector<Channel> channels) : length_(length), precision_(precision), height_(height), width_(width),
         cnt_channels_(cnt_channels), channels_(channels) {}
 
-    sof0(Section &section);
+    Sof0(Section &section);
 
-    bool operator==(const sof0 &other) const;
-    static bool sort_channel(const channel &l, const channel &r) {
+    bool operator==(const Sof0 &other) const;
+    static bool sort_channel(const Channel &l, const Channel &r) {
         return l.id < r.id;
     }
 
@@ -78,10 +78,10 @@ public:
 private:
     int length_;
     int precision_;
-    int heigth_;
+    int height_;
     int width_;
     int cnt_channels_;
-    std::vector<channel> channels_;
+    std::vector<Channel> channels_;
 
     bool flag_use_bytes_;
     bool create_sof0_correct_;
@@ -94,15 +94,15 @@ struct tree {
     tree *r;
 };
 
-class dht {
+class Dht {
 public:
-    dht(int length, int type_dht, int id, bool flag_create_tree, std::map<std::string, int> tree_list) :
+    Dht(int length, int type_dht, int id, bool flag_create_tree, std::map<std::string, int> tree_list) :
         length_(length), type_dht_(type_dht), id_(id), flag_create_tree_(flag_create_tree),
         tree_list_(tree_list) {}
 
-    dht(Section &section);
+    Dht(Section &section);
 
-    bool operator==(const dht &other) const;
+    bool operator==(const Dht &other) const;
 
     void print_dfs();
     void print_dfs(tree *cur);
@@ -137,15 +137,15 @@ struct channel_sos {
     bool operator==(const channel_sos &other) const;
 };
 
-class sos {
+class Sos {
 public:
-    sos(int length, int cnt_channel, std::vector<channel_sos> channels) : length_(length), cnt_channels_(cnt_channel),
+    Sos(int length, int cnt_channel, std::vector<channel_sos> channels) : length_(length), cnt_channels_(cnt_channel),
                                                                  channels_(channels) {
     }
 
-    sos(Section &section);
+    Sos(Section &section);
 
-    bool operator==(const sos &other) const;
+    bool operator==(const Sos &other) const;
 
     static bool comp(const channel_sos &l, const channel_sos &r) {
         return l.id < r.id;

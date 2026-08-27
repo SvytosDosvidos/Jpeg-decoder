@@ -1,5 +1,4 @@
 #pragma once
-
 #include<vector>
 #include<string>
 #include<map>
@@ -7,26 +6,15 @@
 #include<fstream>
 #include<stdexcept>
 
+#include "parser.h"
 #include "creator_matrix.h"
-#include "markers.h"
 #include "image.h"
 
 #include "../cmake-build-debug/_deps/catch2-src/src/catch2/generators/catch_generators.hpp"
 
-template <typename T>
-concept HasGetFlag = requires(T t) {
-    t.get_flag_use_bytes();
-};
-
-class Parser {
+class Decoder {
 public:
-    Parser() {}
-
     void decode(std::string path);
-
-    static bool comp_dht(const Dht& l, const Dht& r) {
-        return l.get_id() < r.get_id();
-    }
 
     void createMatrix();
 
@@ -41,23 +29,6 @@ public:
 
     void calculations_final(CreatorMatrix &creator);
 
-    int get_size_table_quants() const;
-    int get_size_sof0s() const;
-    int get_size_dhts() const;
-    int get_size_soss() const;
-
-    bool get_is_open() const;
-
-    Sof0 get_sof0(int ind) const;
-    Dht get_dht(int ind) const;
-    TableQuant get_table_quant(int ind) const;
-    Sos get_sos(int ind) const;
-
-    void corret_parse();
-
-    template <HasGetFlag T>
-    void corret_parse(std::vector<T> markers);
-
     int get_size_creator_matrix_y() const;
 
     CreatorMatrix get_creator_matrix_y(int ind) const;
@@ -66,15 +37,7 @@ public:
 
     Image get_image() const;
 private:
-    std::vector<TableQuant> table_quants_;
-    std::vector<Sof0> sof0s_;
-    std::vector<Dht> dhts_;
-    std::vector<Sos> soss_;
-
-    std::map<int, TableQuant> map_table_quants_;
-
-    std::vector<int> end_symbols_;
-    bool is_open_;
+    Parser parser_;
 
     std::vector<CreatorMatrix> creator_matrix_y_;
     CreatorMatrix creator_matrix_Cb_;

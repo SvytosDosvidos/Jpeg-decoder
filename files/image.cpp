@@ -21,7 +21,7 @@ Image::pixel Image::YCbCrToRGB_nums(double Y, double Cb, double Cr) {
     return pix;
 }
 
-void Image::YCbCrToRGB(std::vector<creatorMatrix> &Y, creatorMatrix &Cb, creatorMatrix &Cr) {
+void Image::YCbCrToRGB(std::vector<CreatorMatrix> &Y, CreatorMatrix &Cb, CreatorMatrix &Cr) {
     for (int y = 0; y < 16; y++) {
         for (int x = 0; x < 16; x++) {
             int Y_num = get_y_num(Y, y, x);
@@ -62,7 +62,7 @@ void Image::print_image() const {
     std::cout << "\n";
 }
 
-int Image::get_y_num(std::vector<creatorMatrix> Y, int ind_i, int ind_j) {
+int Image::get_y_num(std::vector<CreatorMatrix> Y, int ind_i, int ind_j) {
     if (ind_i <= 7 && ind_j <= 7) {
         return Y[0].get_el_matrix_final(ind_i, ind_j);
     } else if (ind_i <= 7 && ind_j >= 8) {

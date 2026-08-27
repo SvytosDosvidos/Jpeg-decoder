@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include "creatorMatrix.h"
+#include "creator_matrix.h"
 
 class Image {
 public:
@@ -14,11 +14,11 @@ public:
     Image();
 
     pixel YCbCrToRGB_nums(double Y, double Cb, double Cr);
-    void YCbCrToRGB(std::vector<creatorMatrix> &Y, creatorMatrix &Cb, creatorMatrix &Cr);
+    void YCbCrToRGB(std::vector<CreatorMatrix> &Y, CreatorMatrix &Cb, CreatorMatrix &Cr);
 
     void print_image() const;
 
-    int get_y_num(std::vector<creatorMatrix> Y, int ind_i, int ind_j);
+    int get_y_num(std::vector<CreatorMatrix> Y, int ind_i, int ind_j);
 
     int get_el_matrix_r(int ind_i, int ind_j) const;
     int get_el_matrix_g(int ind_i, int ind_j) const;

@@ -6,18 +6,18 @@
 #include<iostream>
 #include<cmath>
 
-#include "filters.h"
+#include "markers.h"
 
-class creatorMatrix {
+class CreatorMatrix {
 public:
-    creatorMatrix(int last_use_byte, bool create_matrix, bool find_dc, std::vector<std::vector<int>> matrix,
+    CreatorMatrix(int last_use_byte, bool create_matrix, bool find_dc, std::vector<std::vector<int>> matrix,
         std::vector<std::vector<int>> matrix_quant, std::vector<std::vector<int>> matrix_reverse_cos) : last_use_byte_(last_use_byte),
         create_matrix_(create_matrix), find_dc_(find_dc), matrix_(matrix), matrix_quant_(matrix_quant),
         matrix_reverse_cos_(matrix_reverse_cos) {}
 
-    creatorMatrix();
+    CreatorMatrix();
 
-    bool operator== (const creatorMatrix &other) const;
+    bool operator== (const CreatorMatrix &other) const;
 
     void createMatrix(std::vector<char> &symbols, std::map<std::string, int> tree_list_dc,
         std::map<std::string, int> tree_list_ac);

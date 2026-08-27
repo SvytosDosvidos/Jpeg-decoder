@@ -1,6 +1,6 @@
-#include "creatorMatrix.h"
+#include "creator_matrix.h"
 
-creatorMatrix::creatorMatrix() {
+CreatorMatrix::CreatorMatrix() {
     matrix_.resize(8);
     matrix_quant_.resize(8);
     matrix_reverse_cos_.resize(8);
@@ -13,7 +13,7 @@ creatorMatrix::creatorMatrix() {
     }
 }
 
-bool creatorMatrix::operator==(const creatorMatrix &other) const {
+bool CreatorMatrix::operator==(const CreatorMatrix &other) const {
     return last_use_byte_ == other.last_use_byte_
            && create_matrix_ == other.create_matrix_
            && find_dc_ == other.find_dc_
@@ -22,7 +22,7 @@ bool creatorMatrix::operator==(const creatorMatrix &other) const {
            && matrix_reverse_cos_ == other.matrix_reverse_cos_;
 }
 
-void creatorMatrix::createMatrix(std::vector<char> &symbols, std::map<std::string, int> tree_list_dc,
+void CreatorMatrix::createMatrix(std::vector<char> &symbols, std::map<std::string, int> tree_list_dc,
                                  std::map<std::string, int> tree_list_ac) {
     find_dc_ = false;
     create_matrix_ = true;
@@ -109,7 +109,7 @@ void creatorMatrix::createMatrix(std::vector<char> &symbols, std::map<std::strin
     }
 }
 
-void creatorMatrix::print_matrix() const {
+void CreatorMatrix::print_matrix() const {
     for (int i = 0; i < matrix_.size(); i++) {
         for (int j = 0; j < matrix_[i].size(); j++) {
             std::cout << matrix_[i][j] << " ";
@@ -120,7 +120,7 @@ void creatorMatrix::print_matrix() const {
     std::cout << last_use_byte_ << "\n";
 }
 
-void creatorMatrix::print_matrix_quant() const {
+void CreatorMatrix::print_matrix_quant() const {
     for (int i = 0; i < matrix_quant_.size(); i++) {
         for (int j = 0; j < matrix_quant_[i].size(); j++) {
             std::cout << matrix_quant_[i][j] << " ";
@@ -129,7 +129,7 @@ void creatorMatrix::print_matrix_quant() const {
     }
 }
 
-void creatorMatrix::print_matrix_reverse_cos_() const {
+void CreatorMatrix::print_matrix_reverse_cos_() const {
     for (int i = 0; i < matrix_reverse_cos_.size(); i++) {
         for (int j = 0; j < matrix_reverse_cos_[i].size(); j++) {
             std::cout << matrix_reverse_cos_[i][j] << " ";
@@ -138,38 +138,38 @@ void creatorMatrix::print_matrix_reverse_cos_() const {
     }
 }
 
-int creatorMatrix::get_last_use_byte() const {
+int CreatorMatrix::get_last_use_byte() const {
     return last_use_byte_;
 }
 
-int creatorMatrix::get_el_matrix(int ind_i, int ind_j) const {
+int CreatorMatrix::get_el_matrix(int ind_i, int ind_j) const {
     return matrix_[ind_i][ind_j];
 }
 
-void creatorMatrix::set_el_matrix(int ind_i, int ind_j, int el) {
+void CreatorMatrix::set_el_matrix(int ind_i, int ind_j, int el) {
     matrix_[ind_i][ind_j] = el;
 }
 
-void creatorMatrix::set_el_matrix_quant(int ind_i, int ind_j, int el) {
+void CreatorMatrix::set_el_matrix_quant(int ind_i, int ind_j, int el) {
     matrix_quant_[ind_i][ind_j] = el;
 }
 
-int creatorMatrix::get_el_matrix_quant(int ind_i, int ind_j) const {
+int CreatorMatrix::get_el_matrix_quant(int ind_i, int ind_j) const {
     return matrix_quant_[ind_i][ind_j];
 }
 
-void creatorMatrix::set_el_matrix_reverse_cos(int ind_i, int ind_j, int el) {
+void CreatorMatrix::set_el_matrix_reverse_cos(int ind_i, int ind_j, int el) {
     matrix_reverse_cos_[ind_i][ind_j] = el;
 }
 
-int creatorMatrix::get_el_matrix_reverse_cos(int ind_i, int ind_j) const {
+int CreatorMatrix::get_el_matrix_reverse_cos(int ind_i, int ind_j) const {
     return matrix_reverse_cos_[ind_i][ind_j];
 }
 
-void creatorMatrix::set_el_matrix_final(int ind_i, int ind_j, int el) {
+void CreatorMatrix::set_el_matrix_final(int ind_i, int ind_j, int el) {
     matrix_final_[ind_i][ind_j] = el;
 }
 
-int creatorMatrix::get_el_matrix_final(int ind_i, int ind_j) const {
+int CreatorMatrix::get_el_matrix_final(int ind_i, int ind_j) const {
     return matrix_final_[ind_i][ind_j];
 }

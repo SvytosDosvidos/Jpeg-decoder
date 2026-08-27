@@ -1,4 +1,4 @@
-#include "filters.h"
+#include "markers.h"
 
 bool go2granintsy(int ind_i) {
     if (ind_i < 0 || ind_i >= 8) {
@@ -38,14 +38,14 @@ bool channel_sos::operator==(const channel_sos &other) const {
 }
 
 //table_quant
-bool table_quant::operator==(const table_quant &other) const {
+bool TableQuant::operator==(const TableQuant &other) const {
     return length_ == other.length_
            && size_byte_ == other.size_byte_
            && ind_table_ == other.ind_table_
            && matrix_ == other.matrix_;
 }
 
-table_quant::table_quant(Section &section) {
+TableQuant::TableQuant(Section &section) {
     flag_use_bytes_ = true;
     length_ = section.get_length();
 
@@ -60,7 +60,7 @@ table_quant::table_quant(Section &section) {
     create_matrix(section);
 }
 
-void table_quant::create_matrix(Section &section) {
+void TableQuant::create_matrix(Section &section) {
     int ind_i = 0, ind_j = 0;
     std::vector<std::pair<int, int> > directions = {{-1, 1}, {1, -1}};
     int type = 0;
@@ -78,41 +78,41 @@ void table_quant::create_matrix(Section &section) {
     }
 }
 
-int table_quant::get_length() const {
+int TableQuant::get_length() const {
     return length_;
 }
 
-int table_quant::get_size_byte() const {
+int TableQuant::get_size_byte() const {
     return size_byte_;
 }
 
-int table_quant::get_ind_table() const {
+int TableQuant::get_ind_table() const {
     return ind_table_;
 }
 
-int table_quant::get_el_matrix(int i, int j) const {
+int TableQuant::get_el_matrix(int i, int j) const {
     return matrix_[i][j];
 }
 
-std::vector<std::vector<int> > table_quant::get_matrix() const {
+std::vector<std::vector<int> > TableQuant::get_matrix() const {
     return matrix_;
 }
 
-bool table_quant::get_flag_use_bytes() const {
+bool TableQuant::get_flag_use_bytes() const {
     return flag_use_bytes_;
 }
 
 //sof0
-bool sof0::operator==(const sof0 &other) const {
+bool Sof0::operator==(const Sof0 &other) const {
     return length_ == other.length_
            && precision_ == other.precision_
-           && heigth_ == other.heigth_
+           && height_ == other.height_
            && width_ == other.width_
            && cnt_channels_ == other.cnt_channels_
            && channels_ == other.channels_;
 }
 
-sof0::sof0(Section &section) {
+Sof0::Sof0(Section &section) {
     flag_use_bytes_ = true;
     length_ = section.get_length();
 
@@ -123,7 +123,7 @@ sof0::sof0(Section &section) {
     }
 
     precision_ = section.get_buffer_el(2);
-    heigth_ = section.get_buffer_el(3, 4);
+    height_ = section.get_buffer_el(3, 4);
     width_ = section.get_buffer_el(5, 6);
     cnt_channels_ = section.get_buffer_el(7);
     channels_.resize(cnt_channels_);
@@ -150,20 +150,20 @@ sof0::sof0(Section &section) {
     }
 }
 
-int sof0::get_id_channel(int ind) const {
+int Sof0::get_id_channel(int ind) const {
     return channels_[ind].id;
 }
 
-int sof0::get_id_quant(int ind) const {
+int Sof0::get_id_quant(int ind) const {
     return channels_[ind].id_quant;
 }
 
-bool sof0::get_flag_use_bytes() const {
+bool Sof0::get_flag_use_bytes() const {
     return flag_use_bytes_;
 }
 
 //dht
-dht::dht(Section &section) {
+Dht::Dht(Section &section) {
     flag_use_bytes_ = true;
     length_ = section.get_length();
     sum_bytes_ = 0;
@@ -200,7 +200,7 @@ dht::dht(Section &section) {
     create_tree();
 }
 
-bool dht::operator==(const dht &other) const {
+bool Dht::operator==(const Dht &other) const {
     return length_ == other.length_
            && type_dht_ == other.type_dht_
            && id_ == other.id_
@@ -208,7 +208,7 @@ bool dht::operator==(const dht &other) const {
            && tree_list_ == other.tree_list_;
 }
 
-bool dht::dfs(int cur_h, tree *cur, int h, int num, std::string &key) {
+bool Dht::dfs(int cur_h, tree *cur, int h, int num, std::string &key) {
     if (cur_h < h) {
         if (!cur->l) {
             cur->l = new tree({-1, nullptr, nullptr});
@@ -246,12 +246,12 @@ bool dht::dfs(int cur_h, tree *cur, int h, int num, std::string &key) {
     }
 }
 
-void dht::print_dfs() {
+void Dht::print_dfs() {
     std::cout << "start_print\n";
     print_dfs(start);
 }
 
-void dht::print_dfs(tree *cur) {
+void Dht::print_dfs(tree *cur) {
     if (!cur) {
         std::cout << "\n";
         return;
@@ -263,7 +263,7 @@ void dht::print_dfs(tree *cur) {
     print_dfs(cur->r);
 }
 
-void dht::create_tree() {
+void Dht::create_tree() {
     start = new tree({-1, nullptr, nullptr});
     for (int i = 0; i < 16; i++) {
         for (int j = 0; j < codes_[i].size(); j++) {
@@ -277,24 +277,24 @@ void dht::create_tree() {
     }
 }
 
-int dht::get_type_dht() const {
+int Dht::get_type_dht() const {
     return type_dht_;
 }
 
-int dht::get_id() const {
+int Dht::get_id() const {
     return id_;
 }
 
-std::map<std::string, int> dht::get_tree_list() const {
+std::map<std::string, int> Dht::get_tree_list() const {
     return tree_list_;
 }
 
-bool dht::get_flag_use_bytes() const {
+bool Dht::get_flag_use_bytes() const {
     return flag_use_bytes_;
 }
 
 //sos
-sos::sos(Section &section) {
+Sos::Sos(Section &section) {
     flag_use_bytes_ = true;
     length_ = section.get_length();
 
@@ -329,24 +329,24 @@ sos::sos(Section &section) {
     sort(channels_.begin(), channels_.end(), comp);
 }
 
-bool sos::operator==(const sos &other) const {
+bool Sos::operator==(const Sos &other) const {
     return length_ == other.length_
            && cnt_channels_ == other.cnt_channels_
            && channels_ == other.channels_;
 }
 
-int sos::get_id_dc(int ind) const {
+int Sos::get_id_dc(int ind) const {
     return channels_[ind].id_DC;
 }
 
-int sos::get_id_ac(int ind) const {
+int Sos::get_id_ac(int ind) const {
     return channels_[ind].id_AC;
 }
 
-int sos::get_id(int ind) const {
+int Sos::get_id(int ind) const {
     return channels_[ind].id;
 }
 
-bool sos::get_flag_use_bytes() const {
+bool Sos::get_flag_use_bytes() const {
     return flag_use_bytes_;
 }

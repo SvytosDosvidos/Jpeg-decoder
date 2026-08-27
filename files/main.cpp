@@ -10,7 +10,7 @@ int main(int argc, char *argv[]) {
     }
 
     cout << "this_open\n";
-    parser decoder;
+    Parser decoder;
     decoder.decode(argv[1]);
     return 0;
 }
