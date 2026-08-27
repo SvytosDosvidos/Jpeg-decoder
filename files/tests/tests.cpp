@@ -21,7 +21,7 @@ TEST_CASE("test_jpg.jpg") {
 
     CHECK(jpg_decoder.get_parser().get_is_open());
 
-    /*CHECK(jpg_decoder.get_parser().get_size_table_quants() == 2);
+    CHECK(jpg_decoder.get_parser().get_size_table_quants() == 2);
     CHECK(jpg_decoder.get_parser().get_size_sof0s() == 1);
     CHECK(jpg_decoder.get_parser().get_size_dhts() == 4);
     CHECK(jpg_decoder.get_parser().get_size_soss() == 1);
@@ -379,5 +379,5 @@ TEST_CASE("test_jpg.jpg") {
             CHECK(matrix_g[i][j] == jpg_decoder.get_image().get_el_matrix_g(i,j));
             CHECK(matrix_b[i][j] == jpg_decoder.get_image().get_el_matrix_b(i,j));
         }
-    }*/
+    }
 }

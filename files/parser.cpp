@@ -2,6 +2,144 @@
 
 const int MARKER = 0xff;
 
+std::vector<std::vector<int>> create_matrix(Section &section) noexcept {
+    int ind_i = 0, ind_j = 0;
+    std::vector<std::pair<int, int>> directions = {{-1, 1}, {1, -1}};
+    int type = 0;
+    int ind = 0;
+    std::vector<std::vector<int>> matrix(8, std::vector<int>(8));
+
+    while (ind < 64) {
+        matrix[ind_i][ind_j] = section.get_buffer_el(3 + ind);
+
+        next_inds(ind_i, ind_j, type);
+        ind++;
+    }
+
+    return matrix;
+}
+
+std::unique_ptr<Marker> CreateTableQuant(Section &section) {
+    int length = section.get_length();
+
+    if (length != 67) {
+
+        return;
+    }
+
+    int size_byte = 1 + section.get_buffer_el(2) / 16;
+    int ind_table = section.get_buffer_el(2) % 16;
+
+    std::vector<std::vector<int>> matrix = create_matrix(section);
+
+    return std::make_unique<TableQuant>(length, size_byte, ind_table, matrix);
+}
+
+std::unique_ptr<Marker> CreateSof0(Section &section) {
+    int length = section.get_length();
+
+    if (length < 8) {
+        return;
+    }
+
+    int precision = section.get_buffer_el(2);
+    int height = section.get_buffer_el(3, 4);
+    int width = section.get_buffer_el(5, 6);
+    int cnt_channels = section.get_buffer_el(7);
+    std::vector<Channel> channels(cnt_channels);
+
+    if (3 * cnt_channels + 8 != length) {
+        return;
+    }
+
+    for (int i = 8; i < section.get_length(); i += 3) {
+        int ind = (i - 8) / 3;
+        channels[ind] = {
+            section.get_buffer_el(i), section.get_buffer_el(i + 1) / 16,
+            section.get_buffer_el(i + 1) % 16, section.get_buffer_el(i + 2)
+        };
+    }
+
+    sort(channels.begin(), channels.end(), Sof0::sort_channel);
+
+    if (channels.size() != 3) {
+        return;
+    }
+
+    return std::make_unique<Sof0>(length, precision, height, width, cnt_channels, channels);
+}
+
+std::unique_ptr<Marker> CreateDHT(Section &section) {
+    int length = section.get_length();
+    int sum_bytes = 0;
+
+    if (length < 19) {
+        return;
+    }
+
+    int type_dht = section.get_buffer_el(2) / 16;
+    int id = section.get_buffer_el(2) % 16;
+
+    std::vector<std::vector<int>> codes(16);
+
+    for (int i = 3; i < 19; i++) {
+        sum_bytes += section.get_buffer_el(i);
+    }
+
+    if (3 + 16 + sum_bytes != length) {
+        return;
+    }
+
+    int ind = 19;
+    for (int i = 0; i < 16; i++) {
+        codes[i].resize(section.get_buffer_el(i + 3));
+        for (int j = 0; j < codes[i].size(); j++) {
+            codes[i][j] = section.get_buffer_el(j + ind);
+        }
+        ind += codes[i].size();
+    }
+
+    create_tree();
+
+    return std::make_unique<Dht>();
+}
+
+std::unique_ptr<Marker> CreateSos(Section &section) {
+    length_ = section.get_length();
+
+    if (length_ < 3) {
+        flag_use_bytes_ = false;
+        return;
+    }
+
+    cnt_channels_ = section.get_buffer_el(2);
+
+    if (2 * cnt_channels_ + 3 + 3 != length_) {
+        flag_use_bytes_ = false;
+        return;
+    }
+
+    channels_.resize(cnt_channels_);
+    for (int i = 0; i < cnt_channels_; i++) {
+        channel_sos cur_channel;
+        cur_channel.id = section.get_buffer_el(2 * i + 3);
+        cur_channel.id_DC = section.get_buffer_el(2 * i + 4) / 16;
+        cur_channel.id_AC = section.get_buffer_el(2 * i + 4) % 16;
+        channels_[i] = cur_channel;
+    }
+
+    if (section.get_buffer_el(2 * cnt_channels_ + 3) != 0x00 &&
+        section.get_buffer_el(2 * cnt_channels_ + 4) != 0x3F &&
+        section.get_buffer_el(2 * cnt_channels_ + 5) != 0x00) {
+        flag_use_bytes_ = false;
+        return;
+        }
+
+    sort(channels_.begin(), channels_.end(), comp);
+
+    return std::make_unique<Sos>();
+}
+
 void Parser::decode(std::string path) {
     std::ifstream file(path, std::ios::binary);
 
@@ -34,6 +172,8 @@ void Parser::decode(std::string path) {
     mapf[0xDA] = 2;//sos
     mapf[0xD9] = 0;//
     //0xFE, 0xE0 - in local test
+
+    intiCreator();
 
     int i = 0;
     bool findDA = false;
@@ -112,6 +252,13 @@ void Parser::ProcessingEndSymbols(std::vector<char> &bits) {
             t.pop_back();
         }
     }
+}
+
+void Parser::intiCreator() {
+    creator_marker_.AddCreatorMarker("table_quant", CreateTableQuant);
+    creator_marker_.AddCreatorMarker("sof0", CreateSof0);
+    creator_marker_.AddCreatorMarker("dht", CreateDHT);
+    creator_marker_.AddCreatorMarker("sos", CreateSos);
 }
 
 int Parser::get_size_table_quants() const {

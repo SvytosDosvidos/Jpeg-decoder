@@ -5,6 +5,7 @@
 #include<map>
 #include<fstream>
 
+#include "creator_marker.h"
 #include "markers.h"
 
 #include "../cmake-build-debug/_deps/catch2-src/src/catch2/generators/catch_generators.hpp"
@@ -19,6 +20,8 @@ public:
     Parser() {}
 
     void decode(std::string path);
+
+    void intiCreator();
 
     static bool comp_dht(const Dht& l, const Dht& r) {
         return l.get_id() < r.get_id();
@@ -44,6 +47,8 @@ public:
     template <HasGetFlag T>
     void corret_parse(std::vector<T> markers);
 private:
+    CreatorMarker creator_marker_;
+
     std::vector<TableQuant> table_quants_;
     std::vector<Sof0> sof0s_;
     std::vector<Dht> dhts_;

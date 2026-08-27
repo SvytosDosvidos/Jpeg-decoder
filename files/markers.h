@@ -11,15 +11,17 @@
 bool go2granintsy(int ind_i);
 void next_inds(int &ind_i, int &ind_j, int &type);
 
-class TableQuant {
-public:
-    TableQuant(Section &section);
+class Marker {
+private:
 
+};
+
+class TableQuant : public Marker {
+public:
     TableQuant(int length, int size_byte, int ind_table, std::vector<std::vector<int>> &matrix) : length_(length),
         size_byte_(size_byte), ind_table_(ind_table), matrix_(matrix) {
     };
 
-    TableQuant() = default;
     TableQuant(const TableQuant &) = default;
     TableQuant(TableQuant &&) = default;
     TableQuant &operator=(const TableQuant &) = default;
@@ -59,13 +61,11 @@ struct Channel {
     }
 };
 
-class Sof0 {
+class Sof0 : public Marker {
 public:
     Sof0(int length, int precision, int height, int width, int cnt_channels,
         std::vector<Channel> channels) : length_(length), precision_(precision), height_(height), width_(width),
         cnt_channels_(cnt_channels), channels_(channels) {}
-
-    Sof0(Section &section);
 
     bool operator==(const Sof0 &other) const;
     static bool sort_channel(const Channel &l, const Channel &r) {
@@ -84,7 +84,6 @@ private:
     std::vector<Channel> channels_;
 
     bool flag_use_bytes_;
-    bool create_sof0_correct_;
 };
 
 struct tree {
@@ -94,13 +93,11 @@ struct tree {
     tree *r;
 };
 
-class Dht {
+class Dht : public Marker {
 public:
     Dht(int length, int type_dht, int id, bool flag_create_tree, std::map<std::string, int> tree_list) :
         length_(length), type_dht_(type_dht), id_(id), flag_create_tree_(flag_create_tree),
         tree_list_(tree_list) {}
-
-    Dht(Section &section);
 
     bool operator==(const Dht &other) const;
 
@@ -137,13 +134,11 @@ struct channel_sos {
     bool operator==(const channel_sos &other) const;
 };
 
-class Sos {
+class Sos : public Marker {
 public:
     Sos(int length, int cnt_channel, std::vector<channel_sos> channels) : length_(length), cnt_channels_(cnt_channel),
                                                                  channels_(channels) {
     }
-
-    Sos(Section &section);
 
     bool operator==(const Sos &other) const;
 

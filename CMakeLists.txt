@@ -20,6 +20,8 @@ add_executable(
         files/creator_matrix.h
         files/decoder.cpp
         files/decoder.h
+        files/creator_marker.cpp
+        files/creator_marker.h
 )
 
 include(FetchContent)
