@@ -19,8 +19,7 @@ private:
 class TableQuant : public Marker {
 public:
     TableQuant(int length, int size_byte, int ind_table, std::vector<std::vector<int>> &matrix) : length_(length),
-        size_byte_(size_byte), ind_table_(ind_table), matrix_(matrix) {
-    };
+        size_byte_(size_byte), ind_table_(ind_table), matrix_(matrix) {}
 
     TableQuant(const TableQuant &) = default;
     TableQuant(TableQuant &&) = default;
@@ -29,7 +28,7 @@ public:
 
     bool operator==(const TableQuant &other) const;
 
-    void create_matrix(Section &section);
+    static std::vector<std::vector<int>> create_matrix(Section &section) noexcept;
 
     int get_length() const;
     int get_size_byte() const;
@@ -101,11 +100,12 @@ public:
 
     bool operator==(const Dht &other) const;
 
+    static bool dfs(int cur_h, tree *cur, int h, int num, std::string &key);
+    static void create_tree(tree* &start, std::vector<std::vector<int>> &codes,
+        std::map<std::string, int> &tree_list, bool &flag_create_tree);
+
     void print_dfs();
     void print_dfs(tree *cur);
-
-    bool dfs(int cur_h, tree *cur, int h, int num, std::string &key);
-    void create_tree();
 
     int get_type_dht() const;
     int get_id() const;
@@ -136,9 +136,8 @@ struct channel_sos {
 
 class Sos : public Marker {
 public:
-    Sos(int length, int cnt_channel, std::vector<channel_sos> channels) : length_(length), cnt_channels_(cnt_channel),
-                                                                 channels_(channels) {
-    }
+    Sos(int length, int cnt_channel, std::vector<channel_sos> channels) : length_(length),
+        cnt_channels_(cnt_channel), channels_(channels) {}
 
     bool operator==(const Sos &other) const;
 

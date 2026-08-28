@@ -2,35 +2,17 @@
 
 const int MARKER = 0xff;
 
-std::vector<std::vector<int>> create_matrix(Section &section) noexcept {
-    int ind_i = 0, ind_j = 0;
-    std::vector<std::pair<int, int>> directions = {{-1, 1}, {1, -1}};
-    int type = 0;
-    int ind = 0;
-    std::vector<std::vector<int>> matrix(8, std::vector<int>(8));
-
-    while (ind < 64) {
-        matrix[ind_i][ind_j] = section.get_buffer_el(3 + ind);
-
-        next_inds(ind_i, ind_j, type);
-        ind++;
-    }
-
-    return matrix;
-}
-
 std::unique_ptr<Marker> CreateTableQuant(Section &section) {
     int length = section.get_length();
 
     if (length != 67) {
-
-        return;
+        throw std::logic_error("error");
     }
 
     int size_byte = 1 + section.get_buffer_el(2) / 16;
     int ind_table = section.get_buffer_el(2) % 16;
 
-    std::vector<std::vector<int>> matrix = create_matrix(section);
+    std::vector<std::vector<int>> matrix = TableQuant::create_matrix(section);
 
     return std::make_unique<TableQuant>(length, size_byte, ind_table, matrix);
 }
@@ -39,7 +21,7 @@ std::unique_ptr<Marker> CreateSof0(Section &section) {
     int length = section.get_length();
 
     if (length < 8) {
-        return;
+        throw std::logic_error("error");
     }
 
     int precision = section.get_buffer_el(2);
@@ -49,7 +31,7 @@ std::unique_ptr<Marker> CreateSof0(Section &section) {
     std::vector<Channel> channels(cnt_channels);
 
     if (3 * cnt_channels + 8 != length) {
-        return;
+        throw std::logic_error("error");
     }
 
     for (int i = 8; i < section.get_length(); i += 3) {
@@ -63,7 +45,7 @@ std::unique_ptr<Marker> CreateSof0(Section &section) {
     sort(channels.begin(), channels.end(), Sof0::sort_channel);
 
     if (channels.size() != 3) {
-        return;
+        throw std::logic_error("error");
     }
 
     return std::make_unique<Sof0>(length, precision, height, width, cnt_channels, channels);
@@ -74,7 +56,7 @@ std::unique_ptr<Marker> CreateDHT(Section &section) {
     int sum_bytes = 0;
 
     if (length < 19) {
-        return;
+        throw std::logic_error("error");
     }
 
     int type_dht = section.get_buffer_el(2) / 16;
@@ -87,7 +69,7 @@ std::unique_ptr<Marker> CreateDHT(Section &section) {
     }
 
     if (3 + 16 + sum_bytes != length) {
-        return;
+        throw std::logic_error("error");
     }
 
     int ind = 19;
@@ -99,45 +81,49 @@ std::unique_ptr<Marker> CreateDHT(Section &section) {
         ind += codes[i].size();
     }
 
-    create_tree();
+    tree *start;
 
-    return std::make_unique<Dht>();
+    bool flag_create_tree = true;
+    std::map<std::string, int> tree_list;
+    Dht::create_tree(start, codes, tree_list, flag_create_tree);
+
+    if (!flag_create_tree) {
+        throw std::logic_error("error");
+    }
+    return std::make_unique<Dht>(length, type_dht, id, flag_create_tree, tree_list);
 }
 
 std::unique_ptr<Marker> CreateSos(Section &section) {
-    length_ = section.get_length();
+    int length = section.get_length();
 
-    if (length_ < 3) {
-        flag_use_bytes_ = false;
-        return;
+    if (length < 3) {
+        throw std::logic_error("error");
     }
 
-    cnt_channels_ = section.get_buffer_el(2);
+    int cnt_channels = section.get_buffer_el(2);
 
-    if (2 * cnt_channels_ + 3 + 3 != length_) {
-        flag_use_bytes_ = false;
-        return;
+    if (2 * cnt_channels + 3 + 3 != length) {
+        throw std::logic_error("error");
     }
 
-    channels_.resize(cnt_channels_);
-    for (int i = 0; i < cnt_channels_; i++) {
+    std::vector<channel_sos> channels(cnt_channels);
+    for (int i = 0; i < cnt_channels; i++) {
         channel_sos cur_channel;
         cur_channel.id = section.get_buffer_el(2 * i + 3);
         cur_channel.id_DC = section.get_buffer_el(2 * i + 4) / 16;
         cur_channel.id_AC = section.get_buffer_el(2 * i + 4) % 16;
-        channels_[i] = cur_channel;
+        channels[i] = cur_channel;
     }
 
-    if (section.get_buffer_el(2 * cnt_channels_ + 3) != 0x00 &&
-        section.get_buffer_el(2 * cnt_channels_ + 4) != 0x3F &&
-        section.get_buffer_el(2 * cnt_channels_ + 5) != 0x00) {
-        flag_use_bytes_ = false;
-        return;
+    if (section.get_buffer_el(2 * cnt_channels + 3) != 0x00 &&
+        section.get_buffer_el(2 * cnt_channels + 4) != 0x3F &&
+        section.get_buffer_el(2 * cnt_channels + 5) != 0x00) {
+        throw std::logic_error("error");
         }
 
-    sort(channels_.begin(), channels_.end(), comp);
+    sort(channels.begin(), channels.end(), Sos::comp);
 
-    return std::make_unique<Sos>();
+    return std::make_unique<Sos>(length, cnt_channels, channels);
 }
 
 void Parser::decode(std::string path) {

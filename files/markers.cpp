@@ -45,6 +45,23 @@ bool TableQuant::operator==(const TableQuant &other) const {
            && matrix_ == other.matrix_;
 }
 
+std::vector<std::vector<int>> TableQuant::create_matrix(Section &section) noexcept {
+    int ind_i = 0, ind_j = 0;
+    std::vector<std::pair<int, int>> directions = {{-1, 1}, {1, -1}};
+    int type = 0;
+    int ind = 0;
+    std::vector<std::vector<int>> matrix(8, std::vector<int>(8));
+
+    while (ind < 64) {
+        matrix[ind_i][ind_j] = section.get_buffer_el(3 + ind);
+
+        next_inds(ind_i, ind_j, type);
+        ind++;
+    }
+
+    return matrix;
+}
+
 int TableQuant::get_length() const {
     return length_;
 }
@@ -138,6 +155,21 @@ bool Dht::dfs(int cur_h, tree *cur, int h, int num, std::string &key) {
     }
 }
 
+void Dht::create_tree(tree* &start, std::vector<std::vector<int>> &codes,
+    std::map<std::string, int> &tree_list, bool &flag_create_tree) {
+    start = new tree({-1, nullptr, nullptr});
+    for (int i = 0; i < 16; i++) {
+        for (int j = 0; j < codes[i].size(); j++) {
+            std::string key = "";
+            flag_create_tree &= dfs(0, start, i + 1, codes[i][j], key);
+            tree_list[key] = codes[i][j];
+            if (!flag_create_tree) {
+                return;
+            }
+        }
+    }
+}
+
 void Dht::print_dfs() {
     std::cout << "start_print\n";
     print_dfs(start);
@@ -153,20 +185,6 @@ void Dht::print_dfs(tree *cur) {
     print_dfs(cur->l);
     std::cout << "r: ";
     print_dfs(cur->r);
-}
-
-void Dht::create_tree() {
-    start = new tree({-1, nullptr, nullptr});
-    for (int i = 0; i < 16; i++) {
-        for (int j = 0; j < codes_[i].size(); j++) {
-            std::string key = "";
-            flag_create_tree_ &= dfs(0, start, i + 1, codes_[i][j], key);
-            tree_list_[key] = codes_[i][j];
-            if (!flag_create_tree_) {
-                return;
-            }
-        }
-    }
 }
 
 int Dht::get_type_dht() const {
