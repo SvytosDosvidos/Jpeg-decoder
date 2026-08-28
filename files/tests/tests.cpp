@@ -26,6 +26,16 @@ TEST_CASE("test_jpg.jpg") {
     CHECK(jpg_decoder.get_parser().get_size_dhts() == 4);
     CHECK(jpg_decoder.get_parser().get_size_soss() == 1);
 
+    std::vector<int> end_bytes = {
+        0xAE, 0xE7, 0x61, 0xF2, 0x1B, 0xD5, 0x22, 0x85,
+        0x5D, 0x04, 0x3C, 0x82, 0xC8, 0x48, 0xB1, 0xDC, 0xBF
+    };
+
+    CHECK(end_bytes.size() == jpg_decoder.get_parser().get_size_end_symbols());
+    for (int i = 0; i < end_bytes.size(); i++) {
+        CHECK(end_bytes[i] == jpg_decoder.get_parser().get_el_end_symbol(i));
+    }
+
     //check table_quants
     std::vector<TableQuant> table_quants;
 

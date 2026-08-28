@@ -21,6 +21,8 @@ public:
     TableQuant(int length, int size_byte, int ind_table, std::vector<std::vector<int>> &matrix) : length_(length),
         size_byte_(size_byte), ind_table_(ind_table), matrix_(matrix) {}
 
+    TableQuant() = default;
+
     TableQuant(const TableQuant &) = default;
     TableQuant(TableQuant &&) = default;
     TableQuant &operator=(const TableQuant &) = default;
@@ -44,8 +46,6 @@ private:
     int ind_table_;
 
     std::vector<std::vector<int>> matrix_;
-
-    bool flag_use_bytes_;
 };
 
 struct Channel {
@@ -81,8 +81,6 @@ private:
     int width_;
     int cnt_channels_;
     std::vector<Channel> channels_;
-
-    bool flag_use_bytes_;
 };
 
 struct tree {
@@ -123,7 +121,6 @@ private:
     std::map<std::string, int> tree_list_;
 
     int sum_bytes_;
-    bool flag_use_bytes_;
 };
 
 struct channel_sos {
@@ -154,6 +151,4 @@ private:
     int length_;
     int cnt_channels_;
     std::vector<channel_sos> channels_;
-
-    bool flag_use_bytes_;
 };

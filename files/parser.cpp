@@ -2,7 +2,7 @@
 
 const int MARKER = 0xff;
 
-std::unique_ptr<Marker> CreateTableQuant(Section &section) {
+MarkerVariant CreateTableQuant(Section &section) {
     int length = section.get_length();
 
     if (length != 67) {
@@ -14,10 +14,10 @@ std::unique_ptr<Marker> CreateTableQuant(Section &section) {
 
     std::vector<std::vector<int>> matrix = TableQuant::create_matrix(section);
 
-    return std::make_unique<TableQuant>(length, size_byte, ind_table, matrix);
+    return TableQuant(length, size_byte, ind_table, matrix);
 }
 
-std::unique_ptr<Marker> CreateSof0(Section &section) {
+MarkerVariant CreateSof0(Section &section) {
     int length = section.get_length();
 
     if (length < 8) {
@@ -48,10 +48,10 @@ std::unique_ptr<Marker> CreateSof0(Section &section) {
         throw std::logic_error("error");
     }
 
-    return std::make_unique<Sof0>(length, precision, height, width, cnt_channels, channels);
+    return Sof0(length, precision, height, width, cnt_channels, channels);
 }
 
-std::unique_ptr<Marker> CreateDHT(Section &section) {
+MarkerVariant CreateDHT(Section &section) {
     int length = section.get_length();
     int sum_bytes = 0;
 
@@ -90,10 +90,10 @@ std::unique_ptr<Marker> CreateDHT(Section &section) {
     if (!flag_create_tree) {
         throw std::logic_error("error");
     }
-    return std::make_unique<Dht>(length, type_dht, id, flag_create_tree, tree_list);
+    return Dht(length, type_dht, id, flag_create_tree, tree_list);
 }
 
-std::unique_ptr<Marker> CreateSos(Section &section) {
+MarkerVariant CreateSos(Section &section) {
     int length = section.get_length();
 
     if (length < 3) {
@@ -123,10 +123,17 @@ std::unique_ptr<Marker> CreateSos(Section &section) {
 
     sort(channels.begin(), channels.end(), Sos::comp);
 
-    return std::make_unique<Sos>(length, cnt_channels, channels);
+    return Sos(length, cnt_channels, channels);
 }
 
-void Parser::decode(std::string path) {
+void Parser::intiCreator() {
+    creator_marker_.AddCreatorMarker("table_quant", CreateTableQuant);
+    creator_marker_.AddCreatorMarker("sof0", CreateSof0);
+    creator_marker_.AddCreatorMarker("dht", CreateDHT);
+    creator_marker_.AddCreatorMarker("sos", CreateSos);
+}
+
+void Parser::parse(std::string path) {
     std::ifstream file(path, std::ios::binary);
 
     if (!file.is_open()) {
@@ -179,42 +186,28 @@ void Parser::decode(std::string path) {
             sections.push_back(this_section);
 
             if (this_section.get_marker() == 0xDB) {
-                TableQuant new_table_quant(this_section);
-                table_quants_.push_back(new_table_quant);
-                map_table_quants_[new_table_quant.get_ind_table()] = new_table_quant;
+                MarkerVariant marker = creator_marker_.CreateMarker("table_quant", this_section);
+                TableQuant table_quant = std::get<TableQuant>(marker);
+                table_quants_.push_back(table_quant);
+                map_table_quants_[table_quant.get_ind_table()] = table_quant;
             } else if (this_section.get_marker() == 0xC0) {
-                Sof0 new_sof0(this_section);
-                sof0s_.push_back(new_sof0);
+                MarkerVariant marker = creator_marker_.CreateMarker("sof0", this_section);
+                Sof0 sof0 = std::get<Sof0>(marker);
+                sof0s_.push_back(sof0);
             } else if (this_section.get_marker() == 0xC4) {
-                Dht new_dht(this_section);
-                dhts_.push_back(new_dht);
+                MarkerVariant marker = creator_marker_.CreateMarker("dht", this_section);
+                Dht dht = std::get<Dht>(marker);
+                dhts_.push_back(dht);
             } else if (this_section.get_marker() == 0xDA) {
                 findDA = true;
-                Sos new_sos(this_section);
-                soss_.push_back(new_sos);
+                MarkerVariant marker = creator_marker_.CreateMarker("sos", this_section);
+                Sos sos = std::get<Sos>(marker);
+                soss_.push_back(sos);
             }
         } else if (findDA) {
             end_symbols_.push_back(buffer[i]);
             i++;
         } else {
-            throw std::logic_error("Incorrect file structure .jpg");
-        }
-    }
-
-    corret_parse();
-}
-
-void Parser::corret_parse() {
-    corret_parse(table_quants_);
-    corret_parse(sof0s_);
-    corret_parse(dhts_);
-    corret_parse(soss_);
-}
-
-template<HasGetFlag T>
-void Parser::corret_parse(std::vector<T> markers) {
-    for (int i = 0; i < markers.size(); i++) {
-        if (!markers[i].get_flag_use_bytes()) {
             throw std::logic_error("Incorrect file structure .jpg");
         }
     }
@@ -238,13 +231,6 @@ void Parser::ProcessingEndSymbols(std::vector<char> &bits) {
             t.pop_back();
         }
     }
-}
-
-void Parser::intiCreator() {
-    creator_marker_.AddCreatorMarker("table_quant", CreateTableQuant);
-    creator_marker_.AddCreatorMarker("sof0", CreateSof0);
-    creator_marker_.AddCreatorMarker("dht", CreateDHT);
-    creator_marker_.AddCreatorMarker("sos", CreateSos);
 }
 
 int Parser::get_size_table_quants() const {
@@ -285,4 +271,12 @@ TableQuant Parser::get_map_table_quant(int ind) {
 
 Sos Parser::get_sos(int ind) const {
     return soss_[ind];
+}
+
+int Parser::get_size_end_symbols() const {
+    return end_symbols_.size();
+}
+
+int Parser::get_el_end_symbol(int ind) const {
+    return end_symbols_[ind];
 }

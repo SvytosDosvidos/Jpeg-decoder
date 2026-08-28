@@ -19,13 +19,8 @@ class Parser {
 public:
     Parser() {}
 
-    void decode(std::string path);
-
     void intiCreator();
-
-    static bool comp_dht(const Dht& l, const Dht& r) {
-        return l.get_id() < r.get_id();
-    }
+    void parse(std::string path);
 
     void ProcessingEndSymbols(std::vector<char> &bits);
 
@@ -36,16 +31,18 @@ public:
 
     bool get_is_open() const;
 
+    static bool comp_dht(const Dht& l, const Dht& r) {
+        return l.get_id() < r.get_id();
+    }
+
     Sof0 get_sof0(int ind) const;
     Dht get_dht(int ind) const;
     TableQuant get_table_quant(int ind) const;
     TableQuant get_map_table_quant(int ind);
     Sos get_sos(int ind) const;
 
-    void corret_parse();
-
-    template <HasGetFlag T>
-    void corret_parse(std::vector<T> markers);
+    int get_size_end_symbols() const;
+    int get_el_end_symbol(int ind) const;
 private:
     CreatorMarker creator_marker_;
 

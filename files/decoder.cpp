@@ -4,7 +4,7 @@ void Decoder::decode(std::string path) {
     creator_matrix_y_.resize(4);
 
     Parser parser;
-    parser.decode(path);
+    parser.parse(path);
     parser_ = parser;
 
     createMatrix();

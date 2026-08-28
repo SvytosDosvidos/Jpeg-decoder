@@ -82,10 +82,6 @@ std::vector<std::vector<int> > TableQuant::get_matrix() const {
     return matrix_;
 }
 
-bool TableQuant::get_flag_use_bytes() const {
-    return flag_use_bytes_;
-}
-
 //sof0
 bool Sof0::operator==(const Sof0 &other) const {
     return length_ == other.length_
@@ -102,10 +98,6 @@ int Sof0::get_id_channel(int ind) const {
 
 int Sof0::get_id_quant(int ind) const {
     return channels_[ind].id_quant;
-}
-
-bool Sof0::get_flag_use_bytes() const {
-    return flag_use_bytes_;
 }
 
 //dht
@@ -199,10 +191,6 @@ std::map<std::string, int> Dht::get_tree_list() const {
     return tree_list_;
 }
 
-bool Dht::get_flag_use_bytes() const {
-    return flag_use_bytes_;
-}
-
 //sos
 bool Sos::operator==(const Sos &other) const {
     return length_ == other.length_
@@ -220,8 +208,4 @@ int Sos::get_id_ac(int ind) const {
 
 int Sos::get_id(int ind) const {
     return channels_[ind].id;
-}
-
-bool Sos::get_flag_use_bytes() const {
-    return flag_use_bytes_;
 }

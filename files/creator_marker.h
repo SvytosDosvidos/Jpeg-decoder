@@ -4,17 +4,19 @@
 #include <string>
 #include <functional>
 #include <memory>
+#include <variant>
 
 #include "markers.h"
 
-using Creator = std::function<std::unique_ptr<Marker>(Section &section)>;
+using MarkerVariant = std::variant<TableQuant, Sof0, Dht, Sos>;
+using Creator = std::function<MarkerVariant(Section &section)>;
 
 class CreatorMarker {
 public:
     CreatorMarker() {}
 
     void AddCreatorMarker(const std::string& name, Creator creator);
-    std::unique_ptr<Marker> CreateMarker(const std::string& name, Section &section);
+    MarkerVariant CreateMarker(const std::string& name, Section &section);
 private:
     std::map<std::string, Creator> creators_;
 };
