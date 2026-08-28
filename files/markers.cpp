@@ -78,7 +78,7 @@ int TableQuant::get_el_matrix(int i, int j) const {
     return matrix_[i][j];
 }
 
-std::vector<std::vector<int> > TableQuant::get_matrix() const {
+std::vector<std::vector<int>> TableQuant::get_matrix() const {
     return matrix_;
 }
 

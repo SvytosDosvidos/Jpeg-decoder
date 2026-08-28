@@ -6,7 +6,7 @@ MarkerVariant CreateTableQuant(Section &section) {
     int length = section.get_length();
 
     if (length != 67) {
-        throw std::logic_error("error");
+        throw std::logic_error("Incorrect file structure .jpg");
     }
 
     int size_byte = 1 + section.get_buffer_el(2) / 16;
@@ -21,7 +21,7 @@ MarkerVariant CreateSof0(Section &section) {
     int length = section.get_length();
 
     if (length < 8) {
-        throw std::logic_error("error");
+        throw std::logic_error("Incorrect file structure .jpg");
     }
 
     int precision = section.get_buffer_el(2);
@@ -31,7 +31,7 @@ MarkerVariant CreateSof0(Section &section) {
     std::vector<Channel> channels(cnt_channels);
 
     if (3 * cnt_channels + 8 != length) {
-        throw std::logic_error("error");
+        throw std::logic_error("Incorrect file structure .jpg");
     }
 
     for (int i = 8; i < section.get_length(); i += 3) {
@@ -45,7 +45,7 @@ MarkerVariant CreateSof0(Section &section) {
     sort(channels.begin(), channels.end(), Sof0::sort_channel);
 
     if (channels.size() != 3) {
-        throw std::logic_error("error");
+        throw std::logic_error("Incorrect file structure .jpg");
     }
 
     return Sof0(length, precision, height, width, cnt_channels, channels);
@@ -56,7 +56,7 @@ MarkerVariant CreateDHT(Section &section) {
     int sum_bytes = 0;
 
     if (length < 19) {
-        throw std::logic_error("error");
+        throw std::logic_error("Incorrect file structure .jpg");
     }
 
     int type_dht = section.get_buffer_el(2) / 16;
@@ -69,7 +69,7 @@ MarkerVariant CreateDHT(Section &section) {
     }
 
     if (3 + 16 + sum_bytes != length) {
-        throw std::logic_error("error");
+        throw std::logic_error("Incorrect file structure .jpg");
     }
 
     int ind = 19;
@@ -88,7 +88,7 @@ MarkerVariant CreateDHT(Section &section) {
     Dht::create_tree(start, codes, tree_list, flag_create_tree);
 
     if (!flag_create_tree) {
-        throw std::logic_error("error");
+        throw std::logic_error("Incorrect file structure .jpg");
     }
     return Dht(length, type_dht, id, flag_create_tree, tree_list);
 }
@@ -97,7 +97,7 @@ MarkerVariant CreateSos(Section &section) {
     int length = section.get_length();
 
     if (length < 3) {
-        throw std::logic_error("error");
+        throw std::logic_error("Incorrect file structure .jpg");
     }
 
     int cnt_channels = section.get_buffer_el(2);
@@ -118,10 +118,10 @@ MarkerVariant CreateSos(Section &section) {
     if (section.get_buffer_el(2 * cnt_channels + 3) != 0x00 &&
         section.get_buffer_el(2 * cnt_channels + 4) != 0x3F &&
         section.get_buffer_el(2 * cnt_channels + 5) != 0x00) {
-        throw std::logic_error("error");
+        throw std::logic_error("Incorrect file structure .jpg");
         }
 
-    sort(channels.begin(), channels.end(), Sos::comp);
+    sort(channels.begin(), channels.end(), Sos::sort_sos);
 
     return Sos(length, cnt_channels, channels);
 }

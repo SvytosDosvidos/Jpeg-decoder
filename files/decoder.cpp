@@ -1,5 +1,7 @@
 #include "decoder.h"
 
+const double PI = 3.14159265358979323846;
+
 void Decoder::decode(std::string path) {
     creator_matrix_y_.resize(4);
 
@@ -146,9 +148,8 @@ void Decoder::calculations_reverse_cos(CreatorMatrix &creator) {
             double new_el = 0;
             for (int u = 0; u < 8; u++) {
                 for (int v = 0; v < 8; v++) {
-                    double pi = 3.14159265358979323846;
-                    double arg_cos_1 = (2 * x + 1) * u * pi / 16.0;
-                    double arg_cos_2 = (2 * y + 1) * v * pi / 16.0;
+                    double arg_cos_1 = (2 * x + 1) * u * PI / 16.0;
+                    double arg_cos_2 = (2 * y + 1) * v * PI / 16.0;
                     double this_el = 1 / 4.0 * find_k_c(u) * find_k_c(v) * cos(arg_cos_1) * cos(arg_cos_2);
                     this_el *= creator.get_el_matrix_quant(v, u);
                     new_el += this_el;

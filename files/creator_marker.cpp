@@ -4,10 +4,10 @@ void CreatorMarker::AddCreatorMarker(const std::string& name, Creator creator) {
     creators_[name] = creator;
 }
 
-MarkerVariant CreatorMarker::CreateMarker(const std::string& name, Section &section) {
+MarkerVariant CreatorMarker::CreateMarker(const std::string& name, Section& section) {
     auto it = creators_.find(name);
     if (it == creators_.end()) {
-        //
+        throw std::logic_error("Incorrect file structure .jpg");
     }
     return it->second(section);
 }
