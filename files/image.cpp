@@ -74,14 +74,6 @@ int Image::get_y_num(std::vector<CreatorMatrix> Y, int ind_i, int ind_j) {
     }
 }
 
-int Image::get_el_matrix_r(int ind_i, int ind_j) const {
-    return RGB_[ind_i][ind_j].R;
-}
-
-int Image::get_el_matrix_g(int ind_i, int ind_j) const {
-    return RGB_[ind_i][ind_j].G;
-}
-
-int Image::get_el_matrix_b(int ind_i, int ind_j) const {
-    return RGB_[ind_i][ind_j].B;
+Image::pixel Image::get_el_matrix_pixel(int ind_i, int ind_j) const {
+    return RGB_[ind_i][ind_j];
 }

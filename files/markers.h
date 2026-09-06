@@ -11,13 +11,16 @@ bool go2granintsy(int ind_i);
 void next_inds(int &ind_i, int &ind_j, int &type);
 
 class Marker {
-private:
-
+public:
+    Marker() = default;
+    Marker(int length) : length_(length) {}
+protected:
+    int length_;
 };
 
 class TableQuant : public Marker {
 public:
-    TableQuant(int length, int size_byte, int ind_table, std::vector<std::vector<int>> &matrix) : length_(length),
+    TableQuant(int length, int size_byte, int ind_table, std::vector<std::vector<int>> &matrix) : Marker(length),
         size_byte_(size_byte), ind_table_(ind_table), matrix_(matrix) {}
 
     TableQuant() = default;
@@ -39,7 +42,6 @@ public:
 
     std::vector<std::vector<int>> get_matrix() const;
 private:
-    int length_;
     int size_byte_;
     int ind_table_;
 
@@ -61,7 +63,7 @@ struct Channel {
 class Sof0 : public Marker {
 public:
     Sof0(int length, int precision, int height, int width, int cnt_channels,
-        std::vector<Channel> channels) : length_(length), precision_(precision), height_(height), width_(width),
+        std::vector<Channel> channels) : Marker(length), precision_(precision), height_(height), width_(width),
         cnt_channels_(cnt_channels), channels_(channels) {}
 
     bool operator==(const Sof0 &other) const;
@@ -72,7 +74,6 @@ public:
     int get_id_quant(int ind) const;
     int get_id_channel(int ind) const;
 private:
-    int length_;
     int precision_;
     int height_;
     int width_;
@@ -90,7 +91,7 @@ struct tree {
 class Dht : public Marker {
 public:
     Dht(int length, int type_dht, int id, bool flag_create_tree, std::map<std::string, int> tree_list) :
-        length_(length), type_dht_(type_dht), id_(id), flag_create_tree_(flag_create_tree),
+        Marker(length), type_dht_(type_dht), id_(id), flag_create_tree_(flag_create_tree),
         tree_list_(tree_list) {}
 
     bool operator==(const Dht &other) const;
@@ -107,7 +108,6 @@ public:
 
     std::map<std::string, int> get_tree_list() const;
 private:
-    int length_;
     int type_dht_;
     int id_;
     std::vector<std::vector<int>> codes_;
@@ -129,8 +129,8 @@ struct channel_sos {
 
 class Sos : public Marker {
 public:
-    Sos(int length, int cnt_channel, std::vector<channel_sos> channels) : length_(length),
-        cnt_channels_(cnt_channel), channels_(channels) {}
+    Sos(int length, int cnt_channel, std::vector<channel_sos> channels) :
+        Marker(length), cnt_channels_(cnt_channel), channels_(channels) {}
 
     bool operator==(const Sos &other) const;
 
@@ -142,7 +142,6 @@ public:
     int get_id_ac(int ind) const;
     int get_id(int ind) const;
 private:
-    int length_;
     int cnt_channels_;
     std::vector<channel_sos> channels_;
 };

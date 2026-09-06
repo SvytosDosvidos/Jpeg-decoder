@@ -385,9 +385,9 @@ TEST_CASE("test_jpg.jpg") {
 
     for (int i = 0; i < 8; i++) {
         for (int j = 0; j < 8; j++) {
-            CHECK(matrix_r[i][j] == jpg_decoder.get_image().get_el_matrix_r(i,j));
-            CHECK(matrix_g[i][j] == jpg_decoder.get_image().get_el_matrix_g(i,j));
-            CHECK(matrix_b[i][j] == jpg_decoder.get_image().get_el_matrix_b(i,j));
+            CHECK(matrix_r[i][j] == jpg_decoder.get_image().get_el_matrix_pixel(i,j).R);
+            CHECK(matrix_g[i][j] == jpg_decoder.get_image().get_el_matrix_pixel(i,j).G);
+            CHECK(matrix_b[i][j] == jpg_decoder.get_image().get_el_matrix_pixel(i,j).B);
         }
     }
 }

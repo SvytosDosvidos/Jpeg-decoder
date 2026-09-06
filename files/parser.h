@@ -19,7 +19,7 @@ class Parser {
 public:
     Parser() {}
 
-    void intiCreator();
+    void initCreator();
     void parse(std::string path);
 
     void ProcessingEndSymbols(std::vector<char> &bits);

@@ -21,9 +21,7 @@ public:
 
     int get_y_num(std::vector<CreatorMatrix> Y, int ind_i, int ind_j);
 
-    int get_el_matrix_r(int ind_i, int ind_j) const;
-    int get_el_matrix_g(int ind_i, int ind_j) const;
-    int get_el_matrix_b(int ind_i, int ind_j) const;
+    pixel get_el_matrix_pixel(int ind_i, int ind_j) const;
 private:
     std::vector<std::vector<pixel>> RGB_;
 };

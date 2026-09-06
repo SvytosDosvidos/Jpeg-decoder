@@ -6,8 +6,6 @@
 #include "creator_matrix.h"
 #include "image.h"
 
-#include "../cmake-build-debug/_deps/catch2-src/src/catch2/generators/catch_generators.hpp"
-
 class Decoder {
 public:
     Decoder() {};

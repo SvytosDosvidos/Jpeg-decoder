@@ -126,7 +126,7 @@ MarkerVariant CreateSos(Section &section) {
     return Sos(length, cnt_channels, channels);
 }
 
-void Parser::intiCreator() {
+void Parser::initCreator() {
     creator_marker_.AddCreatorMarker("table_quant", CreateTableQuant);
     creator_marker_.AddCreatorMarker("sof0", CreateSof0);
     creator_marker_.AddCreatorMarker("dht", CreateDHT);
@@ -166,7 +166,7 @@ void Parser::parse(std::string path) {
     mapf[0xD9] = 0;//
     //0xFE, 0xE0 - in local test
 
-    intiCreator();
+    initCreator();
 
     int i = 0;
     bool findDA = false;
